@@ -1,171 +1,260 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bonne Année 2025</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(to bottom, #2A3D71, #91C5F3);
-            color: white;
-            overflow-x: hidden;
-        }
+    <title>Royal's Vœux 2026 - Bonne Année</title>
+    <link rel="stylesheet" href="voeux.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="Capture d'écran 2025-12-29 121940.png">
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot, deleteDoc, doc, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
-        .container {
-            text-align: center;
-            padding: 20px;
-            max-width: 90%;
-            margin: 0 auto;
-        }
+        const firebaseConfig = {
+            apiKey: "AIzaSyCAgYVLTRlsHh20IlAuq2_Z4Z-G1-pl80Q",
+            authDomain: "nouvel-an-2026-cbc25.firebaseapp.com",
+            projectId: "nouvel-an-2026-cbc25",
+            storageBucket: "nouvel-an-2026-cbc25.firebasestorage.app",
+            messagingSenderId: "71183787510",
+            appId: "1:71183787510:web:69b6c3547298fbecef93d7"
+        };
 
-        .greeting-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
-            padding: 60px;
-            color: #002147;
-            max-width: 700px;
-            margin: 30px auto;
-            font-size: 1.8rem;
-            text-align: center;
-        }
-
-        .greeting-card h1 {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            text-shadow: 3px 3px 10px rgba(0, 0, 0, 0.4);
-            color: #FF4500;
-        }
-
-        .greeting-card p {
-            font-size: 1.5rem;
-            color: #333333;
-            font-style: italic;
-            margin: 20px 0;
-        }
-
-        .form-container {
-            background-color: white;
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            margin-top: 20px;
-            max-width: 500px;
-            margin: 0 auto;
-            color: #002147;
-        }
-
-        .form-container textarea {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            font-size: 1rem;
-        }
-
-        .form-container button {
-            background-color: #FF4500;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.1rem;
-            cursor: pointer;
-        }
-
-        .form-container button:hover {
-            background-color: #E63900;
-        }
-
-        .messages {
-            margin-top: 30px;
-            color: #FF6347;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            display: none; /* Masqué par défaut */
-        }
-
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 2rem;
-            }
-
-            p {
-                font-size: 1rem;
-            }
-
-            .greeting-card {
-                padding: 30px;
-                font-size: 1.4rem;
-            }
-
-            .form-container,
-            .messages {
-                width: 90%;
-            }
-        }
-    </style>
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        window.firebaseApp = app;
+        window.firebaseDb = db;
+        window.firebaseModules = {
+            collection, addDoc, serverTimestamp, query, orderBy, 
+            limit, onSnapshot, deleteDoc, doc, getDocs, writeBatch
+        };
+    </script>
 </head>
 <body>
+    <!-- Élément audio pour la musique -->
+    <audio id="background-music" loop>
+        <source src="musique-festive.mp3" type="audio/mpeg">
+        Votre navigateur ne supporte pas l'élément audio.
+    </audio>
 
-    <div class="container">
-        <div class="greeting-card">
-            <h1>🎉 Gildas vous souhaite 🎉</h1>
-            <p>Une merveilleuse année 2025 pleine de bonheur, de succès, de santé et d'amour !</p>
+    <!-- Canvas pour les confettis -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Conteneur pour les flocons de neige -->
+    <div id="snowflakes-container"></div>
+
+    <!-- Contrôle de musique -->
+    <div class="music-control">
+        <button id="music-toggle" class="music-btn">
+            🎵 Musique
+        </button>
+        <div id="volume-control" class="music-volume">
+            <input type="range" min="0" max="100" value="50" class="volume-slider" id="volume-slider">
+            <div style="margin-top: 8px; font-size: 0.8rem; color: var(--text-color);">
+                Volume: <span id="volume-value">50</span>%
+            </div>
         </div>
-
-        <!-- Section "Écrivez vos vœux" -->
-        <div class="form-container">
-            <h3>Écrivez vos vœux :</h3>
-            <textarea id="message" placeholder="Écrivez vos vœux ici..." rows="3"></textarea>
-            <button onclick="submitMessage()">Envoyer</button>
+    </div>
+        <!-- Modal de carte de vœux avec bouton retour -->
+<div id="wish-card-modal" class="wish-card-modal">
+    <div class="wish-card">
+        <!-- CROIX DE RETOUR EN HAUT À DROITE -->
+        <button onclick="closeWishCard()" class="close-wish-card" title="Fermer et retourner au site">×</button>
+        
+        <div class="wish-card-header">
+            <h2>🎉 Carte de Vœux 2026 🎉</h2>
+            <div class="wish-card-from" id="wish-card-from"></div>
         </div>
+        <div class="wish-card-content">
+            <div class="wish-card-message" id="wish-card-message"></div>
+            <div class="wish-card-signature">
+                Avec toute mon affection,<br>
+                <strong>Royal's</strong>
+            </div>
+        </div>
+        <div class="wish-card-share">
+            <button onclick="shareOnWhatsApp()" class="share-btn whatsapp" title="Partager sur WhatsApp">
+                💬 
+            </button>
+            <button onclick="shareOnFacebook()" class="share-btn facebook" title="Partager sur Facebook">
+                📘 
+            </button>
+            <button onclick="copyWishCard()" class="share-btn copy" title="Copier le texte ">
+                📋 
+            </button>
+            <button onclick="closeWishCard()" class="share-btn return-btn" title="Retour au site">
+                ↩️ 
+            </button>
+        </div>
+    </div>
+</div>
 
-        <!-- Liste des vœux reçus -->
-        <div class="messages" id="messages">
-            <h3>Vœux reçus :</h3>
-            <ul id="messages-list">
-                <!-- Les vœux seront ajoutés ici -->
-            </ul>
+    <!-- Login admin modal -->
+    <div id="admin-login-modal" class="admin-login-modal">
+        <div class="admin-login-content">
+            <button onclick="closeAdminLogin()" class="close-modal-btn" title="Fermer">×</button>
+            <h2>🔐 Portail Administrateur</h2>
+            <p>Accédez au panel de gestion des vœux</p>
+            <input type="password" id="admin-password" class="admin-input" placeholder="Entrez le token admin">
+            <button onclick="checkAdminLogin()" class="admin-login-btn">Accéder au panel</button>
+            <p style="margin-top: 15px; font-size: 0.8rem; color: var(--muted-color);">
+                Token : seul Gildas le connait 😊
+            </p>
         </div>
     </div>
 
-    <script>
-        // Fonction pour soumettre un vœu
-        function submitMessage() {
-            const message = document.getElementById("message").value;
-            if (message.trim() !== "") {
-                // Ajouter le vœu à la liste
-                const messagesList = document.getElementById("messages-list");
-                const newMessage = document.createElement("li");
-                newMessage.textContent = message;
-                messagesList.appendChild(newMessage);
+    <!-- Panel admin (caché sur le côté) -->
+    <div id="admin-panel" class="admin-panel">
+        <div class="admin-panel-header">
+            <h3>🔧 Administration</h3>
+            <button onclick="closeAdminPanel()" class="close-admin-btn">×</button>
+        </div>
+        <div class="admin-stats">
+            <div class="admin-stats-grid">
+                <div class="admin-stat-item">
+                    <div class="admin-stat-value" id="admin-total-count">0</div>
+                    <div class="admin-stat-label">Total vœux</div>
+                </div>
+                <div class="admin-stat-item">
+                    <div class="admin-stat-value" id="admin-online-count">0</div>
+                    <div class="admin-stat-label">En ligne</div>
+                </div>
+                <div class="admin-stat-item">
+                    <div class="admin-stat-value" id="admin-local-count">0</div>
+                    <div class="admin-stat-label">Locaux</div>
+                </div>
+                <div class="admin-stat-item">
+                    <div class="admin-stat-value" id="admin-visitors-count">0</div>
+                    <div class="admin-stat-label">Visiteurs</div>
+                </div>
+            </div>
+        </div>
+        <div class="admin-actions">
+            <button onclick="exportMessages()" class="admin-action-btn">
+                📥 Exporter tous les vœux
+            </button>
+            <button onclick="importMessages()" class="admin-action-btn">
+                📤 Importer des vœux
+            </button>
+            <button onclick="syncAllMessages()" class="admin-action-btn">
+                🔄 Synchroniser tout
+            </button>
+            <button onclick="clearAllMessages()" class="admin-action-btn delete">
+                🗑️ Tout effacer
+            </button>
+            <button onclick="showDetailedStats()" class="admin-action-btn">
+                📊 Statistiques détaillées
+            </button>
+        </div>
+        <div id="admin-stats-details" style="margin-top: 20px; font-size: 0.9rem; color: var(--muted-color);"></div>
+    </div>
 
-                // Afficher la section des messages
-                document.getElementById("messages").style.display = "block";
+    <!-- Header avec logo Royal's -->
+    <header class="site-header" role="banner">
+        <div class="site-header-inner">
+            <div class="brand" aria-hidden="true">
+                <div class="brand-logo">
+                    <img src="Capture d'écran 2025-12-29 121940.png" alt="Royal's Logo" class="logo-img">
+                </div>
+                <div class="brand-text"><strong style="color: white;">Gildas's</strong></div>
+            </div>
+            <nav class="site-nav" aria-label="Navigation principale">
+                <a href="#" class="nav-link">Accueil</a>
+                <a href="#messages" class="nav-link">Vœux</a>
+                <button id="theme-toggle" class="btn-secondary" type="button" style="padding: 8px 12px;" title="Changer le thème">🌙</button>
+                <button id="celebrate-btn" class="celebrate-btn" type="button" title="Lancer une explosion de confettis">
+                    🎊 waouhh !
+                </button>
+            </nav>
+        </div>
+    </header>
 
-                // Réinitialiser le champ de texte
-                document.getElementById("message").value = "";
-            } else {
-                alert("Veuillez écrire un message avant de soumettre.");
-            }
-        }
+    <div class="container">
+        <div class="greeting-card" id="greeting-card">
+            <h1>🎉 Je vous souhaite 🎉</h1>
+            <p>Une merveilleuse année 2026 pleine de bonheur, de succès, de santé et d'amour !</p>
+            <div class="countdown" id="countdown" aria-live="polite" aria-atomic="true" role="timer" title="Compte à rebours jusqu'au Nouvel An 2026">
+                <div class="countdown-inner">
+                    <div class="time-segment"><span class="num" id="cd-days">0</span><span class="label">Jours</span></div>
+                    <div class="time-segment"><span class="num" id="cd-hours">00</span><span class="label">Heures</span></div>
+                    <div class="time-segment"><span class="num" id="cd-mins">00</span><span class="label">Minutes</span></div>
+                    <div class="time-segment"><span class="num" id="cd-secs">00</span><span class="label">Secondes</span></div>
+                </div>
+            </div>
+        </div>
 
-        // Réinitialiser la liste des vœux à vide
-        window.onload = function() {
-            const messagesList = document.getElementById("messages-list");
-            messagesList.innerHTML = ""; // Vide la liste des vœux
-            document.getElementById("messages").style.display = "none"; // Masque la section
-        }
-    </script>
+        <!-- Interface CÔTÉ À CÔTÉ -->
+        <div class="side-by-side-container" >
+            <!-- Section GAUCHE : Écrivez vos vœux -->
+            <div class="write-wishes-section">
+                <div class="form-container" id="messages">
+                    <h3>✍️ Écrivez vos vœux</h3>
+                    <input id="name" type="text" placeholder="Votre prénom (optionnel)">
+                    <textarea id="message" placeholder="Écrivez vos vœux pour 2026 ici... Que me souhaitez-vous pour cette nouvelle année ?"></textarea>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="submitMessage()" id="submit-btn">✨ Envoyer </button>
+                    </div>
+                    <p class="admin-note">
+                        Votre vœu sera partagé en temps réel .<br>
+                    </p>
+                </div>
+            </div>
 
+            <!-- Section DROITE : Vœux reçus -->
+            <div class="wishes-received-section">
+                <div class="messages-container">
+                    <div class="messages-header">
+                        <h3>📜 Vœux reçus</h3>
+                        <div class="messages-count">
+                            <span id="messages-count">0</span> vœux
+                        </div>
+                    </div>
+                    <button onclick="refreshMessages()" class="refresh-btn" title="Actualiser les messages">
+                        🔄 Actualiser
+                    </button>
+                    <div id="empty-state" class="empty-state">
+                        <div class="empty-state-icon">✨</div>
+                        <div>
+                            <strong>Aucun vœu pour le moment</strong><br>
+                            <span style="font-size: 0.9rem;">Soyez le premier à partager vos vœux !</span>
+                        </div>
+                    </div>
+                    <ul id="messages-list" class="messages-grid">
+                        <!-- Les vœux seront ajoutés ici -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 
-</body></html>
+    <!-- FOOTER -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-contact">
+                <h3><a href="tel:+22899522491" class="phone-number">📞 Contactez-moi</a></h3>
+
+                <div class="footer-social">
+                    <a href="mailto:contact@royals-voeux.com?subject=Vœux%202026" class="social-link" title="Email">✉️</a>
+                    <a href="https://wa.me/22899522491?text=Bonjour%20Royal's%20!%20Je%20viens%20de%20voir%20ton%20site%20de%20vœux%202026%20🎉" class="social-link" title="WhatsApp" target="_blank">💬</a>
+                    <a href="tel:+22899522491" class="social-link" title="Téléphone">📞</a>
+                </div>
+            </div>
+            <div class="footer-copyright">
+                © 2025-2026 <strong>Royal's</strong> - Vœux de Nouvel An. Tous droits réservés.<br>
+                Partagez l'amour et les bonnes ondes pour 2026 ! ✨
+            </div>
+        </div>
+    </footer>
+
+    <!-- Portail admin (bouton flottant) -->
+    <div class="admin-portal-link">
+        <button onclick="openAdminLogin()" class="admin-portal-btn" title="portail des donnees Statistiques reserve uniquement a l'admin Gildas">
+            🔧 portail admin
+        </button>
+    </div>
+
+    <script src="voeux.js"></script>
+</body>
+</html>
