@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- IMPORTANT: user-scalable=yes pour permettre le zoom -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Royal's Vœux 2026 - Bonne Année</title>
     <link rel="stylesheet" href="voeux.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
@@ -57,39 +58,40 @@
             </div>
         </div>
     </div>
-        <!-- Modal de carte de vœux avec bouton retour -->
-<div id="wish-card-modal" class="wish-card-modal">
-    <div class="wish-card">
-        <!-- CROIX DE RETOUR EN HAUT À DROITE -->
-        <button onclick="closeWishCard()" class="close-wish-card" title="Fermer et retourner au site">×</button>
-        
-        <div class="wish-card-header">
-            <h2>🎉 Carte de Vœux 2026 🎉</h2>
-            <div class="wish-card-from" id="wish-card-from"></div>
-        </div>
-        <div class="wish-card-content">
-            <div class="wish-card-message" id="wish-card-message"></div>
-            <div class="wish-card-signature">
-                Avec toute mon affection,<br>
-                <strong>Royal's</strong>
+    
+    <!-- Modal de carte de vœux avec bouton retour -->
+    <div id="wish-card-modal" class="wish-card-modal">
+        <div class="wish-card">
+            <!-- CROIX DE RETOUR EN HAUT À DROITE -->
+            <button onclick="closeWishCard()" class="close-wish-card" title="Fermer et retourner au site">×</button>
+            
+            <div class="wish-card-header">
+                <h2>🎉 Carte de Vœux 2026 🎉</h2>
+                <div class="wish-card-from" id="wish-card-from"></div>
+            </div>
+            <div class="wish-card-content">
+                <div class="wish-card-message" id="wish-card-message"></div>
+                <div class="wish-card-signature">
+                    Avec toute mon affection,<br>
+                    <strong>Royal's</strong>
+                </div>
+            </div>
+            <div class="wish-card-share">
+                <button onclick="shareOnWhatsApp()" class="share-btn whatsapp" title="Partager sur WhatsApp">
+                    💬 
+                </button>
+                <button onclick="shareOnFacebook()" class="share-btn facebook" title="Partager sur Facebook">
+                    📘 
+                </button>
+                <button onclick="copyWishCard()" class="share-btn copy" title="Copier le texte ">
+                    📋 
+                </button>
+                <button onclick="closeWishCard()" class="share-btn return-btn" title="Retour au site">
+                    ↩️ 
+                </button>
             </div>
         </div>
-        <div class="wish-card-share">
-            <button onclick="shareOnWhatsApp()" class="share-btn whatsapp" title="Partager sur WhatsApp">
-                💬 
-            </button>
-            <button onclick="shareOnFacebook()" class="share-btn facebook" title="Partager sur Facebook">
-                📘 
-            </button>
-            <button onclick="copyWishCard()" class="share-btn copy" title="Copier le texte ">
-                📋 
-            </button>
-            <button onclick="closeWishCard()" class="share-btn return-btn" title="Retour au site">
-                ↩️ 
-            </button>
-        </div>
     </div>
-</div>
 
     <!-- Login admin modal -->
     <div id="admin-login-modal" class="admin-login-modal">

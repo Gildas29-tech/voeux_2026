@@ -45,7 +45,11 @@ body.dark-mode {
     --footer-text: #e6eef6;
 }
 
-/* STYLES DE BASE */
+/* STYLES DE BASE - IMPORTANT POUR MOBILE */
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -53,12 +57,12 @@ body {
     background: var(--bg-gradient), radial-gradient(800px 400px at 10% 10%, rgba(41,61,113,0.06), transparent 20%);
     color: var(--text-color);
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-    transition: background 0.3s ease, color 0.3s ease;
+    overflow-x: auto; /* PERMET LE SCROLL HORIZONTAL */
     min-height: 100vh;
     position: relative;
     display: flex;
     flex-direction: column;
+    min-width: 320px; /* MINIMUM POUR ÉVITER TROP PETIT */
 }
 
 /* CONTROLE DE MUSIQUE */
@@ -130,7 +134,7 @@ body {
     cursor: pointer;
 }
 
-/* HEADER AVEC LOGO ROYAL'S */
+/* HEADER AVEC LOGO ROYAL'S - MODIFIÉ POUR MOBILE */
 .site-header { 
     background: var(--header-bg); 
     border-bottom: 1px solid var(--card-border); 
@@ -141,6 +145,8 @@ body {
     box-shadow: 0 6px 18px rgba(52, 62, 78, 0.03); 
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
+    width: 100%;
+    min-width: 320px; /* ASSURE QUE LE HEADER RESTE VISIBLE */
 }
 
 .site-header-inner { 
@@ -151,6 +157,8 @@ body {
     justify-content: space-between; 
     padding: 0 20px; 
     gap: 12px; 
+    width: 100%;
+    min-width: 300px; /* MINIMUM POUR GARDER TOUT VISIBLE */
 }
 
 
@@ -158,11 +166,12 @@ body {
     display: flex; 
     align-items: center; 
     gap: 10px; 
+    flex-shrink: 0; /* EMPÊCHE LE RÉTRÉCISSEMENT */
 }
 
 .brand-logo { 
-    width: 70%; 
-    height: 80px; 
+    width: 70px; /* FIXE POUR MOBILE */
+    height: 70px; /* FIXE POUR MOBILE */
     border-radius: 8px; 
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); 
     display: flex; 
@@ -172,6 +181,7 @@ body {
     font-weight: 700; 
     font-size: 1.2rem;
     overflow: hidden;
+    flex-shrink: 0; /* IMPORTANT */
 }
 
 .logo-img {
@@ -185,6 +195,7 @@ body {
     font-weight: 700; 
     color: rgb(119, 76, 76); 
     font-size: 1.5rem; 
+    white-space: nowrap; /* EMPÊCHE LE RETOUR À LA LIGNE */
 }
 
 .site-nav { 
@@ -192,6 +203,8 @@ body {
     gap: 12px; 
     align-items: center; 
     margin-left: auto; 
+    flex-wrap: nowrap; /* IMPORTANT: PAS DE RETOUR À LA LIGNE */
+    white-space: nowrap;
 }
 
 .nav-link { 
@@ -201,6 +214,7 @@ body {
     border-radius: 8px; 
     transition: all 0.2s ease; 
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .nav-link:hover { 
@@ -504,6 +518,7 @@ body {
     gap: 10px;
     position: relative;
     overflow: hidden;
+    white-space: nowrap;
 }
 
 .celebrate-btn:hover {
@@ -531,7 +546,7 @@ body {
     left: 100%;
 }
 
-/* CONTENEURS */
+/* CONTENEURS - MODIFIÉS POUR MOBILE */
 .container {
     padding: 30px 20px;
     max-width: 1200px;
@@ -539,6 +554,8 @@ body {
     position: relative;
     z-index: 10;
     flex: 1;
+    width: 100%;
+    min-width: 320px; /* MINIMUM POUR ÉVITER TROP PETIT */
 }
 
 .greeting-card {
@@ -555,6 +572,8 @@ body {
     max-width: 1000px;
     position: relative;
     z-index: 10;
+    width: 100%;
+    min-width: 280px; /* ASSURE QUE C'EST TOUJOURS LISIBLE */
 }
 
 .greeting-card h1 {
@@ -587,6 +606,8 @@ body {
     border: 1px solid var(--card-border); 
     box-shadow: 0 14px 44px rgba(10,20,40,0.06); 
     align-items: center; 
+    flex-wrap: wrap; /* PERMET LE RETOUR À LA LIGNE SUR PETIT ÉCRAN */
+    justify-content: center;
 }
 
 .time-segment { 
@@ -628,7 +649,7 @@ body {
     letter-spacing: 0.6px; 
 }
 
-/* INTERFACE CÔTÉ À CÔTÉ */
+/* INTERFACE CÔTÉ À CÔTÉ - MODIFIÉ POUR MOBILE */
 .side-by-side-container {
     display: flex;
     gap: 30px;
@@ -640,12 +661,14 @@ body {
     margin-right: auto;
     position: relative;
     z-index: 10;
+    width: 100%;
+    min-width: 600px; /* MINIMUM POUR GARDER LE CÔTÉ À CÔTÉ */
 }
 
 /* Section GAUCHE - Écrivez vos vœux */
 .write-wishes-section {
     flex: 1;
-    min-width: 420px;
+    min-width: 420px; /* MINIMUM POUR GARDER LA LISIBILITÉ */
     max-width: 580px;
     position: relative;
     z-index: 10;
@@ -664,6 +687,7 @@ body {
     transition: all 0.3s ease;
     position: relative;
     z-index: 10;
+    min-width: 400px; /* MINIMUM POUR LES INPUTS */
 }
 
 .form-container h3 { 
@@ -690,6 +714,7 @@ body {
     font-family: 'Poppins', sans-serif;
     position: relative;
     z-index: 10;
+    min-width: 250px; /* MINIMUM POUR LA SAISIE */
 }
 
 .form-container input:focus,
@@ -716,7 +741,7 @@ body {
 /* Section DROITE - Vœux reçus */
 .wishes-received-section {
     flex: 1.5;
-    min-width: 500px;
+    min-width: 500px; /* MINIMUM POUR GARDER LA LISIBILITÉ */
     max-width: 780px;
     position: relative;
     z-index: 10;
@@ -735,6 +760,7 @@ body {
     transition: all 0.3s ease;
     position: relative;
     z-index: 10;
+    min-width: 480px; /* MINIMUM POUR LES MESSAGES */
 }
 
 .messages-container h3 { 
@@ -829,6 +855,7 @@ body {
     animation: slideIn 0.3s ease;
     position: relative;
     z-index: 10;
+    min-width: 450px; /* MINIMUM POUR L'AFFICHAGE */
 }
 
 .message-item:hover { 
@@ -1256,6 +1283,8 @@ body {
     position: relative;
     z-index: 10;
     border-top: 3px solid var(--secondary-color);
+    width: 100%;
+    min-width: 320px;
 }
 
 .footer-content {
@@ -1341,35 +1370,55 @@ body {
     transform: translateY(-3px) rotate(10deg);
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-    .side-by-side-container {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .write-wishes-section,
-    .wishes-received-section {
-        min-width: 100%;
-        max-width: 100%;
-    }
-    
-    .messages-grid {
-        max-height: 400px;
-    }
-    
-    .admin-portal-link {
-        bottom: 120px;
-    }
-    
-    .music-control {
-        bottom: 180px;
-    }
-}
+/* ============================================
+   AMÉLIORATIONS MOBILE - SCROLL HORIZONTAL
+============================================ */
 
-@media (max-width: 600px) {
+/* Pour les très petits écrans, on permet le scroll horizontal */
+@media (max-width: 900px) {
+    /* On garde tout côte à côte mais avec scroll horizontal */
+    .side-by-side-container {
+        min-width: 900px; /* Force le scroll horizontal sur petit écran */
+        overflow-x: auto; /* Permet le scroll horizontal */
+        padding-bottom: 20px; /* Espace pour le scroll */
+    }
+    
+    /* Style pour la scrollbar horizontale */
+    .side-by-side-container::-webkit-scrollbar {
+        height: 8px;
+    }
+    
+    .side-by-side-container::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-color);
+        border-radius: 4px;
+    }
+    
+    .side-by-side-container::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    /* Ajustements pour le header sur mobile */
+    .site-header-inner {
+        flex-wrap: nowrap; /* Pas de retour à la ligne */
+        overflow-x: auto; /* Scroll si nécessaire */
+        padding: 0 15px;
+        gap: 8px;
+    }
+    
+    .brand {
+        flex-shrink: 0; /* Empêche le rétrécissement */
+    }
+    
+    .site-nav {
+        flex-shrink: 0; /* Empêche le rétrécissement */
+        margin-left: 10px;
+    }
+    
+    /* Ajustements pour les cartes */
     .greeting-card {
-        padding: 25px 20px;
+        min-width: 280px;
+        padding: 25px 15px;
+        margin: 10px auto 20px auto;
     }
     
     .greeting-card h1 {
@@ -1377,8 +1426,8 @@ body {
     }
     
     .countdown-inner {
-        gap: 12px;
-        padding: 10px;
+        gap: 15px;
+        padding: 12px;
     }
     
     .time-segment {
@@ -1390,34 +1439,9 @@ body {
         padding: 8px 12px;
     }
     
-    .form-container,
-    .messages-container {
-        padding: 20px;
-    }
-    
-    .admin-panel {
-        width: 100%;
-    }
-    
-    .footer-content {
-        padding: 0 15px;
-    }
-    
-    .phone-number {
-        padding: 12px 20px;
-        font-size: 1.1rem;
-    }
-
-    .wish-card {
-        padding: 30px 20px;
-    }
-
-    .wish-card-header h2 {
-        font-size: 1.8rem;
-    }
-    
+    /* Ajustements pour les boutons flottants */
     .music-control {
-        bottom: 150px;
+        bottom: 120px;
         right: 10px;
     }
     
@@ -1426,8 +1450,86 @@ body {
         font-size: 0.8rem;
     }
     
-    .brand-text {
+    .admin-portal-link {
+        bottom: 180px;
+        right: 10px;
+    }
+    
+    .admin-portal-btn {
+        padding: 10px 16px;
+        font-size: 0.8rem;
+    }
+    
+    /* Ajustements pour les cartes de vœux */
+    .wish-card {
+        padding: 30px 20px;
+        width: 90%;
+        max-width: 400px;
+    }
+    
+    .wish-card-header h2 {
+        font-size: 1.8rem;
+    }
+    
+    .wish-card-content {
+        padding: 20px;
+    }
+    
+    .wish-card-message {
+        font-size: 1.1rem;
+    }
+    
+    .wish-card-share {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .share-btn {
+        width: auto;
+        padding: 10px 15px;
         font-size: 0.9rem;
+    }
+}
+
+/* Pour les écrans encore plus petits */
+@media (max-width: 600px) {
+    /* On réduit encore les min-width pour garder tout visible avec scroll */
+    .side-by-side-container {
+        min-width: 800px;
+    }
+    
+    .write-wishes-section {
+        min-width: 380px;
+    }
+    
+    .form-container {
+        min-width: 350px;
+        padding: 20px;
+    }
+    
+    .wishes-received-section {
+        min-width: 400px;
+    }
+    
+    .messages-container {
+        min-width: 380px;
+        padding: 20px;
+    }
+    
+    .message-item {
+        min-width: 340px;
+        padding: 15px;
+    }
+    
+    /* Header encore plus compact */
+    .brand-logo {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .brand-text {
+        font-size: 1.2rem;
     }
     
     .nav-link {
@@ -1438,5 +1540,72 @@ body {
     .celebrate-btn {
         padding: 8px 16px;
         font-size: 0.9rem;
+    }
+    
+    /* Footer mobile */
+    .footer-content {
+        padding: 0 15px;
+    }
+    
+    .phone-number {
+        padding: 12px 20px;
+        font-size: 1.1rem;
+    }
+    
+    /* Ajustements des contrôles flottants */
+    .music-control {
+        bottom: 100px;
+    }
+    
+    .admin-portal-link {
+        bottom: 160px;
+    }
+}
+
+/* Pour orientation paysage sur mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+    .messages-grid {
+        max-height: 250px;
+    }
+    
+    .greeting-card {
+        padding: 15px;
+        margin: 5px auto 15px auto;
+    }
+    
+    .side-by-side-container {
+        margin-top: 15px;
+    }
+    
+    .music-control {
+        bottom: 80px;
+    }
+    
+    .admin-portal-link {
+        bottom: 140px;
+    }
+}
+
+/* Support tactile pour éviter les hover sur mobile */
+@media (hover: none) and (pointer: coarse) {
+    .message-item:hover {
+        transform: none;
+        box-shadow: 0 6px 18px rgba(15,30,60,0.04);
+    }
+    
+    .btn:hover,
+    .celebrate-btn:hover,
+    .share-btn:hover,
+    .admin-portal-btn:hover,
+    .music-btn:hover {
+        transform: none;
+    }
+    
+    .btn:active,
+    .celebrate-btn:active,
+    .share-btn:active,
+    .admin-portal-btn:active,
+    .music-btn:active {
+        transform: scale(0.98);
     }
 }
