@@ -2,7 +2,6 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <!-- IMPORTANT: user-scalable=yes pour permettre le zoom -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Royal's Vœux 2026 - Bonne Année</title>
     <link rel="stylesheet" href="voeux.css">
@@ -59,7 +58,7 @@
         </div>
     </div>
     
-    <!-- Modal de carte de vœux avec bouton retour -->
+    <!-- Modal de carte de vœux -->
     <div id="wish-card-modal" class="wish-card-modal">
         <div class="wish-card">
             <!-- CROIX DE RETOUR EN HAUT À DROITE -->
@@ -133,24 +132,39 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Section des vœux dans l'admin -->
+        <div class="admin-wishes-section">
+            <div class="admin-wishes-header">
+                <h4>📜 Vœux reçus</h4>
+                <div class="admin-wishes-actions">
+                    <button onclick="refreshAdminWishes()" class="admin-refresh-btn" title="Rafraîchir">
+                        🔄
+                    </button>
+                    <div class="admin-wishes-count">
+                        <span id="admin-messages-count">0</span> vœux
+                    </div>
+                </div>
+            </div>
+            <div id="admin-wishes-list" class="admin-wishes-grid">
+                <!-- Les vœux seront ajoutés ici -->
+            </div>
+        </div>
+        
         <div class="admin-actions">
             <button onclick="exportMessages()" class="admin-action-btn">
-                📥 Exporter tous les vœux
+                📥 Exporter
             </button>
             <button onclick="importMessages()" class="admin-action-btn">
-                📤 Importer des vœux
+                📤 Importer
             </button>
             <button onclick="syncAllMessages()" class="admin-action-btn">
-                🔄 Synchroniser tout
+                🔄 Synchroniser
             </button>
             <button onclick="clearAllMessages()" class="admin-action-btn delete">
-                🗑️ Tout effacer
-            </button>
-            <button onclick="showDetailedStats()" class="admin-action-btn">
-                📊 Statistiques détaillées
+                🗑️ Effacer tout
             </button>
         </div>
-        <div id="admin-stats-details" style="margin-top: 20px; font-size: 0.9rem; color: var(--muted-color);"></div>
     </div>
 
     <!-- Header avec logo Royal's -->
@@ -163,13 +177,32 @@
                 <div class="brand-text"><strong style="color: white;">Gildas's</strong></div>
             </div>
             <nav class="site-nav" aria-label="Navigation principale">
-                <a href="#" class="nav-link">Accueil</a>
-                <a href="#messages" class="nav-link">Vœux</a>
-                <button id="theme-toggle" class="btn-secondary" type="button" style="padding: 8px 12px;" title="Changer le thème">🌙</button>
-                <button id="celebrate-btn" class="celebrate-btn" type="button" title="Lancer une explosion de confettis">
-                    🎊 waouhh !
+                <button id="theme-toggle" class="nav-btn" type="button" title="Changer le thème">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <button id="celebrate-btn" class="nav-btn celebrate-btn" type="button" title="Lancer une explosion de confettis">
+                    🎊 Célébrer
+                </button>
+                <button onclick="openAdminLogin()" class="nav-btn admin-btn" title="Portail administrateur">
+                    🔧 Admin
                 </button>
             </nav>
+            <!-- Menu mobile -->
+            <button class="mobile-menu-btn" id="mobile-menu-btn">
+                ☰
+            </button>
+        </div>
+        <!-- Menu mobile dropdown -->
+        <div class="mobile-menu" id="mobile-menu">
+            <button id="theme-toggle-mobile" class="mobile-menu-item">
+                <span class="theme-icon">🌙</span> Thème
+            </button>
+            <button id="celebrate-btn-mobile" class="mobile-menu-item">
+                🎊 Célébrer
+            </button>
+            <button onclick="openAdminLogin()" class="mobile-menu-item">
+                🔧 Admin
+            </button>
         </div>
     </header>
 
@@ -187,46 +220,52 @@
             </div>
         </div>
 
-        <!-- Interface CÔTÉ À CÔTÉ -->
-        <div class="side-by-side-container" >
-            <!-- Section GAUCHE : Écrivez vos vœux -->
-            <div class="write-wishes-section">
-                <div class="form-container" id="messages">
-                    <h3>✍️ Écrivez vos vœux</h3>
-                    <input id="name" type="text" placeholder="Votre prénom (optionnel)">
-                    <textarea id="message" placeholder="Écrivez vos vœux pour 2026 ici... Que me souhaitez-vous pour cette nouvelle année ?"></textarea>
-                    <div class="form-actions">
-                        <button class="btn btn-primary" onclick="submitMessage()" id="submit-btn">✨ Envoyer </button>
-                    </div>
-                    <p class="admin-note">
-                        Votre vœu sera partagé en temps réel .<br>
-                    </p>
+        <!-- Formulaire de vœux -->
+        <div class="form-section" id="messages">
+            <div class="form-container">
+                <h2>✍️ Écrivez vos vœux pour 2026</h2>
+                <p class="form-subtitle">Partagez vos souhaits et recevez une carte personnalisée</p>
+                
+                <div class="form-group">
+                    <label for="name">Votre prénom (optionnel)</label>
+                    <input id="name" type="text" placeholder="Ex: emile ">
                 </div>
-            </div>
-
-            <!-- Section DROITE : Vœux reçus -->
-            <div class="wishes-received-section">
-                <div class="messages-container">
-                    <div class="messages-header">
-                        <h3>📜 Vœux reçus</h3>
-                        <div class="messages-count">
-                            <span id="messages-count">0</span> vœux
-                        </div>
+                
+                <div class="form-group">
+                    <label for="message">Vos vœux</label>
+                    <textarea id="message" placeholder="Que me souhaitez-vous pour cette nouvelle année ? Que souhaitez-vous pour vous-même ? Partagez vos meilleurs vœux..."></textarea>
+                    <div class="textarea-counter">
+                        <span id="char-count">0</span>/500 caractères
                     </div>
-                    <button onclick="refreshMessages()" class="refresh-btn" title="Actualiser les messages">
-                        🔄 Actualiser
+                </div>
+                
+                <div class="form-actions">
+                    <button class="btn btn-primary" onclick="submitMessage()" id="submit-btn">
+                        <span class="btn-icon">✨</span>
+                        <span class="btn-text">Envoyer mes vœux</span>
                     </button>
-                    <div id="empty-state" class="empty-state">
-                        <div class="empty-state-icon">✨</div>
-                        <div>
-                            <strong>Aucun vœu pour le moment</strong><br>
-                            <span style="font-size: 0.9rem;">Soyez le premier à partager vos vœux !</span>
-                        </div>
-                    </div>
-                    <ul id="messages-list" class="messages-grid">
-                        <!-- Les vœux seront ajoutés ici -->
+                </div>
+                
+                <div class="form-info">
+                    <p>📝 <strong>Votre vœu sera :</strong></p>
+                    <ul>
+                        <li>Sauvegardé pour Royal's</li>
+                        <li>Visible uniquement par l'administrateur</li>
                     </ul>
                 </div>
+            </div>
+        </div>
+
+        <!-- Instructions pour mobile -->
+        <div class="mobile-instructions">
+            <div class="instruction-card">
+                <h3>📱 Comment ça marche ?</h3>
+                <ol>
+                    <li><strong>Écrivez</strong> vos vœux dans le formulaire</li>
+                    <li><strong>Envoyez</strong> pour recevoir une carte personnalisée</li>
+                    <li><strong>Partagez</strong> votre carte avec vos proches</li>
+                    <li><strong>Célébrez</strong> avec les animations festives !</li>
+                </ol>
             </div>
         </div>
     </div>
@@ -236,26 +275,33 @@
         <div class="footer-content">
             <div class="footer-contact">
                 <h3><a href="tel:+22899522491" class="phone-number">📞 Contactez-moi</a></h3>
-
+                <p>Partagez l'amour et les bonnes ondes pour 2026 !</p>
                 <div class="footer-social">
-                    <a href="mailto:contact@royals-voeux.com?subject=Vœux%202026" class="social-link" title="Email">✉️</a>
-                    <a href="https://wa.me/22899522491?text=Bonjour%20Royal's%20!%20Je%20viens%20de%20voir%20ton%20site%20de%20vœux%202026%20🎉" class="social-link" title="WhatsApp" target="_blank">💬</a>
-                    <a href="tel:+22899522491" class="social-link" title="Téléphone">📞</a>
+                    <a href="mailto:contact@royals-voeux.com?subject=Vœux%202026" class="social-link" title="Email">
+                        <span class="social-icon">✉️</span>
+                        <span class="social-text">Email</span>
+                    </a>
+                    <a href="https://wa.me/22899522491?text=Bonjour%20Royal's%20!%20Je%20viens%20de%20voir%20ton%20site%20de%20vœux%202026%20🎉" class="social-link" title="WhatsApp" target="_blank">
+                        <span class="social-icon">💬</span>
+                        <span class="social-text">WhatsApp</span>
+                    </a>
+                    <a href="tel:+22899522491" class="social-link" title="Téléphone">
+                        <span class="social-icon">📞</span>
+                        <span class="social-text">Appeler</span>
+                    </a>
                 </div>
             </div>
             <div class="footer-copyright">
-                © 2025-2026 <strong>Royal's</strong> - Vœux de Nouvel An. Tous droits réservés.<br>
-                Partagez l'amour et les bonnes ondes pour 2026 ! ✨
+                <p>© 2025-2026 <strong>Royal's</strong> - Vœux de Nouvel An</p>
+                <p>Tous droits réservés. Créé avec ❤️ par Gildas</p>
             </div>
         </div>
     </footer>
 
-    <!-- Portail admin (bouton flottant) -->
-    <div class="admin-portal-link">
-        <button onclick="openAdminLogin()" class="admin-portal-btn" title="portail des donnees Statistiques reserve uniquement a l'admin Gildas">
-            🔧 portail admin
-        </button>
-    </div>
+    <!-- Bouton retour en haut -->
+    <button class="back-to-top" id="back-to-top" title="Retour en haut">
+        ↑
+    </button>
 
     <script src="voeux.js"></script>
 </body>
