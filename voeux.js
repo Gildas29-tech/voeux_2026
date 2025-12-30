@@ -490,9 +490,14 @@ async function submitMessage() {
     submitBtn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-text">Envoi...</span>';
     
     // Sauvegarder localement
-    saveLocalMessage(newMessage);
+    const saved = saveLocalMessage(newMessage);
     
-    // Simuler un envoi (on peut ajouter Firebase plus tard)
+    // Mettre à jour les stats admin si ouvert
+    if (isAdminMode) {
+        updateAdminStats();
+    }
+    
+    // Simuler un envoi
     setTimeout(() => {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<span class="btn-icon">✨</span><span class="btn-text">Envoyer mes vœux</span>';
@@ -584,6 +589,7 @@ function checkAdminLogin() {
         setTimeout(() => {
             document.getElementById('admin-panel').classList.add('open');
             renderAdminWishes();
+            updateAdminStats();
         }, 10);
         
         showNotification("🔧 Mode administrateur activé", "success");
@@ -600,6 +606,38 @@ function closeAdminPanel() {
     }, 300);
 }
 
+// ============================================
+// METTRE À JOUR LES STATISTIQUES ADMIN
+// ============================================
+function updateAdminStats() {
+    if (!isAdminMode) return;
+    
+    const totalCount = document.getElementById('admin-total-count');
+    const onlineCount = document.getElementById('admin-online-count');
+    const localCount = document.getElementById('admin-local-count');
+    const visitorsCount = document.getElementById('admin-visitors-count');
+    
+    if (!totalCount) return;
+    
+    // 1. Total vœux
+    totalCount.textContent = localMessages.length;
+    
+    // 2. En ligne (simulation - normalement depuis Firebase)
+    const onlineUsers = Math.min(localMessages.length, 5); // Simuler des utilisateurs en ligne
+    onlineCount.textContent = onlineUsers;
+    
+    // 3. Locaux (messages de ce navigateur)
+    const localVisitorId = localStorage.getItem("visitorId");
+    const localMessagesCount = localMessages.filter(msg => 
+        msg.visitorId === localVisitorId
+    ).length;
+    localCount.textContent = localMessagesCount;
+    
+    // 4. Visiteurs uniques
+    const uniqueVisitors = [...new Set(localMessages.map(msg => msg.visitorId))].length;
+    visitorsCount.textContent = uniqueVisitors;
+}
+
 function renderAdminWishes() {
     if (!isAdminMode) return;
     
@@ -607,6 +645,9 @@ function renderAdminWishes() {
     const messagesCount = document.getElementById('admin-messages-count');
     
     if (!wishesList) return;
+    
+    // Mettre à jour les statistiques
+    updateAdminStats();
     
     wishesList.innerHTML = '';
     
@@ -657,6 +698,7 @@ function renderAdminWishes() {
 function refreshAdminWishes() {
     loadLocalMessages();
     renderAdminWishes();
+    updateAdminStats();
     showNotification(`✅ ${localMessages.length} vœux affichés`, "success");
 }
 
@@ -666,9 +708,23 @@ function clearAllMessages() {
     localStorage.removeItem(STORAGE_KEY);
     localMessages = [];
     renderAdminWishes();
+    updateAdminStats();
     showNotification("✅ Tous les vœux ont été supprimés", "success");
     
     if (window.launchConfetti) window.launchConfetti();
+}
+
+// Fonctions d'export/import/synchronisation (stubs)
+function exportMessages() {
+    showNotification("📥 Export non implémenté", "info");
+}
+
+function importMessages() {
+    showNotification("📤 Import non implémenté", "info");
+}
+
+function syncAllMessages() {
+    showNotification("🔄 Synchronisation non implémentée", "info");
 }
 
 // ============================================
