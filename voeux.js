@@ -2,80 +2,111 @@
 // CONFIGURATION
 // ============================================
 const ADMIN_TOKEN = "ROYAL";
-const STORAGE_KEY = "voeux_locaux";
-const MAX_MESSAGES = 100;
+const MAX_FLAKES = 200; // Beaucoup plus de flocons
+const MESSAGES_PER_PAGE = 10;
 
 // Variables globales
 let isAdminMode = false;
-let localMessages = [];
-let confettiEffect = null;
+let isSending = false;
+let confettiAnimation = null;
+let allWishes = [];
+let currentPage = 1;
+let totalMessages = 0;
+let snowflakesInterval = null;
 
 // ============================================
-// INITIALISATION DE L'APPLICATION
+// INITIALISATION PRINCIPALE
 // ============================================
 document.addEventListener("DOMContentLoaded", function() {
     console.log("🎉 Initialisation de Royal's Vœux 2026...");
     
-    // Initialiser les composants
-    initMobileMenu();
-    initTheme();
-    initMusic();
-    initBackToTop();
-    initCharacterCounter();
-    createSnowflakes();
-    initConfetti();
+    // Initialiser tout
+    initAllComponents();
     
-    // Charger les messages locaux
-    loadLocalMessages();
-    
-    // Remplir le nom si déjà connu
+    // Remplir nom
     const savedName = localStorage.getItem("visitorName");
-    if (savedName) {
+    if (savedName && document.getElementById("name")) {
         document.getElementById("name").value = savedName;
     }
     
-    // Attacher les événements des boutons
-    attachButtonEvents();
-    
-    // Démarrer le compte à rebours
+    // Démarrer les animations IMMÉDIATEMENT
     startCountdown();
+    createSnowflakes();
+    initConfetti();
+    
+    // Vérifier Firebase
+    setTimeout(() => {
+        if (window.firebaseDb && window.firebaseModules) {
+            console.log("✅ Firebase détecté, chargement des vœux...");
+            loadWishesFromFirebase();
+        } else {
+            console.warn("⚠️ Firebase non détecté");
+        }
+    }, 1500);
     
     console.log("✅ Application prête !");
 });
 
 // ============================================
-// MENU MOBILE
+// INITIALISATION DE TOUS LES COMPOSANTS
 // ============================================
+function initAllComponents() {
+    console.log("🔄 Initialisation des composants...");
+    
+    // 1. Menu mobile
+    initMobileMenu();
+    
+    // 2. Thème
+    initTheme();
+    
+    // 3. Musique
+    initMusic();
+    
+    // 4. Retour en haut
+    initBackToTop();
+    
+    // 5. Compteur de caractères
+    initCharCounter();
+    
+    // 6. Boutons événements
+    initEventButtons();
+    
+    // 7. Formulaire
+    initForm();
+}
+
 function initMobileMenu() {
     const menuBtn = document.getElementById('mobile-menu-btn');
     const mobileMenu = document.getElementById('mobile-menu');
     
-    if (!menuBtn || !mobileMenu) return;
-    
-    menuBtn.addEventListener('click', function() {
-        const isActive = mobileMenu.classList.toggle('active');
-        menuBtn.textContent = isActive ? '✕' : '☰';
-    });
+    if (menuBtn && mobileMenu) {
+        menuBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isActive = mobileMenu.classList.toggle('active');
+            menuBtn.textContent = isActive ? '✕' : '☰';
+        });
+        
+        document.addEventListener('click', function(event) {
+            if (!menuBtn.contains(event.target) && !mobileMenu.contains(event.target) && mobileMenu.classList.contains('active')) {
+                mobileMenu.classList.remove('active');
+                menuBtn.textContent = '☰';
+            }
+        });
+    }
 }
 
-// ============================================
-// GESTION DU THÈME
-// ============================================
 function initTheme() {
-    const themeToggle = document.getElementById("theme-toggle");
-    const themeToggleMobile = document.getElementById("theme-toggle-mobile");
-    
-    // Vérifier le thème sauvegardé
     const savedTheme = localStorage.getItem("theme") || "light";
     if (savedTheme === "dark") {
         document.body.classList.add("dark-mode");
-        updateThemeButtons("☀️", "Mode clair");
     }
     
-    // Attacher les événements
+    const themeToggle = document.getElementById('theme-toggle');
     if (themeToggle) {
         themeToggle.addEventListener("click", toggleTheme);
     }
+    
+    const themeToggleMobile = document.getElementById('theme-toggle-mobile');
     if (themeToggleMobile) {
         themeToggleMobile.addEventListener("click", toggleTheme);
     }
@@ -83,367 +114,798 @@ function initTheme() {
 
 function toggleTheme() {
     const isDark = document.body.classList.toggle("dark-mode");
-    const newTheme = isDark ? "dark" : "light";
-    const icon = isDark ? "☀️" : "🌙";
-    const title = isDark ? "Mode clair" : "Mode sombre";
-    
-    localStorage.setItem("theme", newTheme);
-    updateThemeButtons(icon, title);
+    localStorage.setItem("theme", isDark ? "dark" : "light");
     showNotification(`${isDark ? "Mode sombre" : "Mode clair"} activé`, "info");
+    updateSnowflakes();
 }
 
-function updateThemeButtons(icon, title) {
-    document.querySelectorAll('.theme-icon').forEach(btn => {
-        btn.textContent = icon;
-        btn.parentElement.title = title;
-    });
-}
-
-// ============================================
-// GESTION DE LA MUSIQUE
-// ============================================
 function initMusic() {
     const musicToggle = document.getElementById('music-toggle');
-    const volumeSlider = document.getElementById('volume-slider');
-    const volumeValue = document.getElementById('volume-value');
     const backgroundMusic = document.getElementById('background-music');
     
-    if (!backgroundMusic) return;
-    
-    // Volume par défaut
-    const savedVolume = localStorage.getItem('musicVolume') || 30;
-    backgroundMusic.volume = savedVolume / 100;
-    
-    if (volumeSlider && volumeValue) {
-        volumeSlider.value = savedVolume;
-        volumeValue.textContent = savedVolume;
+    if (musicToggle && backgroundMusic) {
+        const savedVolume = localStorage.getItem('musicVolume') || 50;
+        backgroundMusic.volume = savedVolume / 100;
         
-        volumeSlider.addEventListener('input', function() {
-            const volume = this.value / 100;
-            backgroundMusic.volume = volume;
-            volumeValue.textContent = this.value;
-            localStorage.setItem('musicVolume', this.value);
-        });
-    }
-    
-    if (musicToggle) {
-        musicToggle.addEventListener('click', function() {
+        musicToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
             if (backgroundMusic.paused) {
-                backgroundMusic.play();
-                musicToggle.innerHTML = '🎵 Musique';
-                musicToggle.classList.remove('paused');
-                showNotification("🎵 Musique activée", "info");
+                backgroundMusic.play().then(() => {
+                    musicToggle.innerHTML = '🎵 Musique';
+                }).catch(err => {
+                    console.log("Audio bloqué:", err);
+                    musicToggle.innerHTML = '🔇 Musique';
+                });
             } else {
                 backgroundMusic.pause();
                 musicToggle.innerHTML = '🔇 Musique';
-                musicToggle.classList.add('paused');
-                showNotification("🔇 Musique désactivée", "info");
+            }
+        });
+        
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeValue = document.getElementById('volume-value');
+        const volumeControl = document.getElementById('volume-control');
+        
+        if (volumeSlider && volumeValue && volumeControl) {
+            volumeSlider.value = savedVolume;
+            volumeValue.textContent = savedVolume;
+            
+            volumeSlider.addEventListener('input', function() {
+                const volume = this.value / 100;
+                backgroundMusic.volume = volume;
+                volumeValue.textContent = this.value;
+                localStorage.setItem('musicVolume', this.value);
+            });
+            
+            musicToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                volumeControl.classList.toggle('show');
+            });
+            
+            document.addEventListener('click', function() {
+                volumeControl.classList.remove('show');
+            });
+            
+            volumeControl.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+    }
+}
+
+function initBackToTop() {
+    const backToTopBtn = document.getElementById('back-to-top');
+    if (backToTopBtn) {
+        window.addEventListener('scroll', function() {
+            backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
+        });
+        
+        backToTopBtn.addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+}
+
+function initCharCounter() {
+    const messageInput = document.getElementById('message');
+    const charCount = document.getElementById('char-count');
+    
+    if (messageInput && charCount) {
+        messageInput.addEventListener('input', function() {
+            const count = this.value.length;
+            charCount.textContent = count;
+            
+            if (count > 450) {
+                charCount.style.color = '#ef4444';
+            } else if (count > 400) {
+                charCount.style.color = '#f59e0b';
+            } else {
+                charCount.style.color = '';
+            }
+        });
+    }
+}
+
+function initEventButtons() {
+    const celebrateBtn = document.getElementById('celebrate-btn');
+    if (celebrateBtn) {
+        celebrateBtn.addEventListener('click', function() {
+            launchConfetti();
+        });
+    }
+    
+    const celebrateBtnMobile = document.getElementById('celebrate-btn-mobile');
+    if (celebrateBtnMobile) {
+        celebrateBtnMobile.addEventListener('click', function() {
+            launchConfetti();
+        });
+    }
+}
+
+function initForm() {
+    const messageTextarea = document.getElementById('message');
+    if (messageTextarea) {
+        messageTextarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                submitMessage();
             }
         });
     }
     
-    // Démarrer la musique après interaction
-    let userInteracted = false;
-    const startMusic = () => {
-        if (!userInteracted) {
-            userInteracted = true;
-            backgroundMusic.play().catch(e => console.log("Musique en attente..."));
-        }
-    };
-    
-    document.addEventListener('click', startMusic);
-    document.addEventListener('touchstart', startMusic);
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', submitMessage);
+    }
 }
 
 // ============================================
-// BOUTON RETOUR EN HAUT
-// ============================================
-function initBackToTop() {
-    const backToTopBtn = document.getElementById('back-to-top');
-    if (!backToTopBtn) return;
-    
-    window.addEventListener('scroll', function() {
-        backToTopBtn.style.display = window.pageYOffset > 300 ? 'flex' : 'none';
-    });
-    
-    backToTopBtn.addEventListener('click', function() {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-}
-
-// ============================================
-// COMPTEUR DE CARACTÈRES
-// ============================================
-function initCharacterCounter() {
-    const messageInput = document.getElementById('message');
-    const charCount = document.getElementById('char-count');
-    
-    if (!messageInput || !charCount) return;
-    
-    messageInput.addEventListener('input', function() {
-        const count = this.value.length;
-        charCount.textContent = count;
-        
-        if (count > 500) {
-            charCount.style.color = 'var(--error-color)';
-        } else if (count > 400) {
-            charCount.style.color = 'var(--warning-color)';
-        } else {
-            charCount.style.color = 'var(--muted-color)';
-        }
-    });
-}
-
-// ============================================
-// FLOCONS DE NEIGE - VERSION CORRIGÉE
+// FLOCONS DE NEIGE - BEAUCOUP PLUS NOMBREUX
 // ============================================
 function createSnowflakes() {
+    console.log("❄️ Création des flocons de neige...");
     const container = document.getElementById('snowflakes-container');
-    if (!container) return;
+    if (!container) {
+        console.error("❌ Conteneur de flocons non trouvé!");
+        return;
+    }
     
-    const snowflakes = ['❄', '❅', '❆', '＊', '·', '✽', '✻', '❉'];
-    const isDarkMode = document.body.classList.contains('dark-mode');
-    const flakeCount = window.innerWidth < 768 ? 80 : 150;
-    
-    // Vider le conteneur
+    const snowflakes = ['❄', '❅', '❆', '✦', '✧', '＊', '❉', '✱', '✳', '❋'];
     container.innerHTML = '';
     
-    for (let i = 0; i < flakeCount; i++) {
+    // Créer BEAUCOUP de flocons
+    for (let i = 0; i < MAX_FLAKES; i++) {
         const snowflake = document.createElement('div');
-        const sizeClass = Math.random() > 0.7 ? 'large' : (Math.random() > 0.5 ? 'medium' : 'small');
+        snowflake.className = 'snowflake';
         
-        snowflake.className = `snowflake ${sizeClass} ${isDarkMode ? 'dark-mode' : ''}`;
+        // Taille très variée
+        const size = Math.random() * 2.5 + 0.2;
+        snowflake.style.fontSize = `${size}rem`;
+        
+        // Type de flocon aléatoire
         snowflake.textContent = snowflakes[Math.floor(Math.random() * snowflakes.length)];
+        
+        // Position horizontale aléatoire
         snowflake.style.left = `${Math.random() * 100}vw`;
-        snowflake.style.opacity = 0.6 + Math.random() * 0.4;
         
-        // Animation aléatoire
-        let animationName = 'fall';
-        let duration = 8 + Math.random() * 4;
+        // Opacité variée
+        snowflake.style.opacity = 0.2 + Math.random() * 0.8;
         
-        if (Math.random() > 0.7) {
-            animationName = 'fall-very-fast';
-            duration = 3 + Math.random() * 2;
-        } else if (Math.random() > 0.4) {
-            animationName = 'fall-fast';
-            duration = 5 + Math.random() * 3;
+        // Vitesse très variée (1-10 secondes)
+        const speed = 1 + Math.random() * 9;
+        const delay = Math.random() * 5;
+        
+        // Choix de l'animation
+        const animations = ['fall-slow', 'fall-medium', 'fall-fast', 'fall-very-fast'];
+        const animation = animations[Math.floor(Math.random() * animations.length)];
+        
+        // Appliquer l'animation
+        snowflake.style.animation = `${animation} ${speed}s linear infinite ${delay}s`;
+        
+        // Classe dark mode si nécessaire
+        if (document.body.classList.contains('dark-mode')) {
+            snowflake.classList.add('dark-mode');
         }
-        
-        snowflake.style.animation = `${animationName} ${duration}s linear infinite ${Math.random() * 5}s`;
         
         container.appendChild(snowflake);
     }
+    
+    console.log(`✅ ${MAX_FLAKES} flocons créés`);
+    
+    // Régénérer les flocons toutes les 30 secondes pour éviter les accumulations
+    if (snowflakesInterval) {
+        clearInterval(snowflakesInterval);
+    }
+    
+    snowflakesInterval = setInterval(() => {
+        const flakes = document.querySelectorAll('.snowflake');
+        if (flakes.length < MAX_FLAKES * 0.5) {
+            createSnowflakes();
+        }
+    }, 30000);
+}
+
+function updateSnowflakes() {
+    const isDark = document.body.classList.contains('dark-mode');
+    const snowflakes = document.querySelectorAll('.snowflake');
+    
+    snowflakes.forEach(flake => {
+        if (isDark) {
+            flake.classList.add('dark-mode');
+        } else {
+            flake.classList.remove('dark-mode');
+        }
+    });
 }
 
 // ============================================
-// CONFETTIS - VERSION SIMPLIFIÉE
+// COMPTE À REBOURS - FONCTIONNEL
 // ============================================
-function initConfetti() {
-    const canvas = document.getElementById('confetti-canvas');
-    if (!canvas) return;
+function startCountdown() {
+    console.log("⏳ Démarrage du compte à rebours...");
     
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    let animationId = null;
+    const targetDate = new Date(2026, 0, 1, 0, 0, 0); // 1er Janvier 2026
     
-    // Redimensionnement du canvas
-    function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+    function updateCountdown() {
+        const now = new Date();
+        const diff = targetDate - now;
+        
+        // Si le Nouvel An est arrivé
+        if (diff <= 0) {
+            updateCountdownElements(0, 0, 0, 0);
+            
+            if (!window.hasCelebratedNewYear) {
+                window.hasCelebratedNewYear = true;
+                if (typeof launchConfetti === 'function') {
+                    launchConfetti();
+                }
+                showNotification("🎉 BONNE ANNÉE 2026 ! 🎉", "success");
+                
+                // Animation spéciale
+                const countdownTitle = document.querySelector('.countdown-title');
+                if (countdownTitle) {
+                    countdownTitle.textContent = "🎉 BONNE ANNÉE 2026 ! 🎉";
+                    countdownTitle.style.color = '#FFD700';
+                    countdownTitle.style.animation = 'pulse 1s infinite';
+                }
+            }
+            return;
+        }
+        
+        // Calculer le temps restant
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        // Mettre à jour les éléments
+        updateCountdownElements(days, hours, minutes, seconds);
     }
     
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-    
-    // Créer les particules de confettis
-    function createConfetti() {
-        particles = [];
-        const colors = ['#FFD700', '#bfa06a', '#243b6b', '#4CAF50', '#9C27B0', '#2196F3', '#FF9800'];
+    function updateCountdownElements(days, hours, minutes, seconds) {
+        const daysEl = document.getElementById("cd-days");
+        const hoursEl = document.getElementById("cd-hours");
+        const minsEl = document.getElementById("cd-mins");
+        const secsEl = document.getElementById("cd-secs");
+        const progressBar = document.getElementById("countdown-progress");
         
-        for (let i = 0; i < 150; i++) {
-            particles.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height - canvas.height,
-                size: Math.random() * 10 + 5,
-                color: colors[Math.floor(Math.random() * colors.length)],
-                speed: Math.random() * 3 + 2,
-                angle: Math.random() * Math.PI * 2,
-                rotation: Math.random() * Math.PI * 2,
-                rotationSpeed: (Math.random() - 0.5) * 0.1
-            });
+        // Jours
+        if (daysEl) {
+            const oldDays = parseInt(daysEl.textContent) || 0;
+            if (oldDays !== days) {
+                daysEl.classList.add('tick');
+                setTimeout(() => daysEl.classList.remove('tick'), 300);
+            }
+            daysEl.textContent = days;
+        }
+        
+        // Heures
+        if (hoursEl) {
+            const formattedHours = hours.toString().padStart(2, "0");
+            if (hoursEl.textContent !== formattedHours) {
+                hoursEl.classList.add('tick');
+                setTimeout(() => hoursEl.classList.remove('tick'), 300);
+            }
+            hoursEl.textContent = formattedHours;
+        }
+        
+        // Minutes
+        if (minsEl) {
+            const formattedMinutes = minutes.toString().padStart(2, "0");
+            if (minsEl.textContent !== formattedMinutes) {
+                minsEl.classList.add('tick');
+                setTimeout(() => minsEl.classList.remove('tick'), 300);
+            }
+            minsEl.textContent = formattedMinutes;
+        }
+        
+        // Secondes (toujours animées)
+        if (secsEl) {
+            const formattedSeconds = seconds.toString().padStart(2, "0");
+            secsEl.classList.add('tick');
+            setTimeout(() => secsEl.classList.remove('tick'), 300);
+            secsEl.textContent = formattedSeconds;
+        }
+        
+        // Barre de progression
+        if (progressBar) {
+            const totalSeconds = 365 * 24 * 60 * 60; // Une année en secondes
+            const elapsedSeconds = (365 - days) * 24 * 60 * 60 + 
+                                  (24 - hours) * 60 * 60 + 
+                                  (60 - minutes) * 60 + 
+                                  (60 - seconds);
+            const progress = (elapsedSeconds / totalSeconds) * 100;
+            progressBar.style.width = `${Math.min(progress, 100)}%`;
         }
     }
     
-    // Animer les confettis
+    // Démarrer immédiatement
+    updateCountdown();
+    
+    // Mettre à jour toutes les secondes
+    setInterval(updateCountdown, 1000);
+    
+    console.log("✅ Compte à rebours démarré");
+}
+
+// ============================================
+// CONFÉTTIS - FONCTIONNEL
+// ============================================
+function initConfetti() {
+    console.log("🎊 Initialisation des confettis...");
+    const canvas = document.getElementById('confetti-canvas');
+    if (!canvas) {
+        console.error("❌ Canvas des confettis non trouvé!");
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    let confettiParticles = [];
+    let animationId = null;
+    
+    class ConfettiParticle {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = -10;
+            this.size = Math.random() * 12 + 3;
+            this.speedY = Math.random() * 5 + 2;
+            this.speedX = Math.random() * 4 - 2;
+            this.color = `hsl(${Math.random() * 360}, 100%, 60%)`;
+            this.rotation = Math.random() * 360;
+            this.rotationSpeed = Math.random() * 10 - 5;
+            this.shape = Math.random() > 0.5 ? 'circle' : 'rect';
+            this.opacity = 1;
+        }
+        
+        update() {
+            this.y += this.speedY;
+            this.x += this.speedX;
+            this.rotation += this.rotationSpeed;
+            
+            // Faire tomber plus naturellement
+            this.speedY += 0.05; // Gravité
+            this.speedX *= 0.99; // Résistance air
+            
+            // Réinitialiser si parti du bas
+            if (this.y > canvas.height) {
+                this.y = -10;
+                this.x = Math.random() * canvas.width;
+                this.speedY = Math.random() * 5 + 2;
+                this.speedX = Math.random() * 4 - 2;
+            }
+        }
+        
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.rotation * Math.PI / 180);
+            ctx.globalAlpha = this.opacity;
+            
+            if (this.shape === 'circle') {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+            }
+            
+            ctx.restore();
+        }
+    }
+    
+    function createConfetti(count = 200) {
+        confettiParticles = [];
+        for (let i = 0; i < count; i++) {
+            confettiParticles.push(new ConfettiParticle());
+        }
+    }
+    
     function animateConfetti() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        particles.forEach(p => {
-            p.y += p.speed;
-            p.x += Math.sin(p.angle) * 0.5;
-            p.rotation += p.rotationSpeed;
-            
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate(p.rotation);
-            ctx.fillStyle = p.color;
-            ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
-            ctx.restore();
-            
-            // Réinitialiser si hors écran
-            if (p.y > canvas.height + 50) {
-                p.y = -50;
-                p.x = Math.random() * canvas.width;
-            }
+        confettiParticles.forEach(particle => {
+            particle.update();
+            particle.draw();
         });
         
         animationId = requestAnimationFrame(animateConfetti);
     }
     
-    // Fonction pour lancer les confettis
     window.launchConfetti = function() {
-        createConfetti();
-        canvas.style.display = 'block';
+        console.log("🎊 Lancement des confettis!");
+        if (!canvas) return;
         
+        // Arrêter l'animation précédente
         if (animationId) {
             cancelAnimationFrame(animationId);
+            animationId = null;
         }
         
+        // Afficher le canvas
+        canvas.style.display = 'block';
+        canvas.style.opacity = '1';
+        
+        // Créer les confettis
+        createConfetti(200);
+        
+        // Démarrer l'animation
         animateConfetti();
         
-        // Arrêter après 5 secondes
+        // Arrêter après 6 secondes
         setTimeout(() => {
-            cancelAnimationFrame(animationId);
-            setTimeout(() => {
-                canvas.style.display = 'none';
-                particles = [];
-            }, 1000);
-        }, 5000);
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            // Faire disparaître progressivement
+            let opacity = 1;
+            const fadeOut = setInterval(() => {
+                opacity -= 0.05;
+                canvas.style.opacity = opacity;
+                
+                if (opacity <= 0) {
+                    clearInterval(fadeOut);
+                    canvas.style.display = 'none';
+                    canvas.style.opacity = 1;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }, 50);
+        }, 6000);
     };
+    
+    // Redimensionnement
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+    
+    console.log("✅ Confettis initialisés");
 }
 
 // ============================================
-// ATTACHER LES ÉVÉNEMENTS DES BOUTONS
+// FIREBASE - CHARGEMENT DES VŒUX
 // ============================================
-function attachButtonEvents() {
-    // Bouton Célébrer
-    const celebrateBtns = document.querySelectorAll('#celebrate-btn, #celebrate-btn-mobile');
-    celebrateBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            if (window.launchConfetti) {
-                window.launchConfetti();
-                showNotification("🎊 Célébrons la nouvelle année !", "success");
-            }
-        });
-    });
+async function loadWishesFromFirebase() {
+    console.log("📥 Chargement des vœux depuis Firebase...");
     
-    // Bouton Admin
-    const adminBtns = document.querySelectorAll('.admin-btn, [onclick*="openAdminLogin"]');
-    adminBtns.forEach(btn => {
-        btn.addEventListener('click', openAdminLogin);
-    });
-    
-    // Formulaire
-    const submitBtn = document.getElementById('submit-btn');
-    if (submitBtn) {
-        submitBtn.addEventListener('click', submitMessage);
+    if (!window.firebaseDb || !window.firebaseModules) {
+        console.warn("⚠️ Firebase non disponible");
+        updateFirebaseStatus(false);
+        return;
     }
     
-    // Boutons de fermeture
-    document.querySelectorAll('.close-wish-card, .close-modal-btn, .close-admin-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            if (this.classList.contains('close-wish-card')) {
-                closeWishCard();
-            } else if (this.classList.contains('close-modal-btn')) {
-                closeAdminLogin();
-            } else if (this.classList.contains('close-admin-btn')) {
-                closeAdminPanel();
-            }
-        });
-    });
-}
-
-// ============================================
-// CARTE DE VŒUX
-// ============================================
-let lastWishSender = '';
-let lastWishMessage = '';
-
-function showWishCard(senderName, message) {
-    lastWishSender = senderName;
-    lastWishMessage = message;
-    
-    const wishPhrases = [
-        "Que cette nouvelle année 2026 vous apporte bonheur, santé et prospérité !",
-        "Je vous souhaite une année remplie de joie, d'amour et de réussite dans tous vos projets.",
-        "Puisse 2026 être pour vous une année de paix, de santé et de réalisations personnelles."
-    ];
-    
-    const randomPhrase = wishPhrases[Math.floor(Math.random() * wishPhrases.length)];
-    
-    document.getElementById('wish-card-from').textContent = `De la part de GILDAS`;
-    document.getElementById('wish-card-message').innerHTML = `
-        <strong>Cher ${senderName},</strong><br><br>
-        Merci du fond du cœur pour vos merveilleux vœux !<br><br>
-        "${message}"<br><br>
-        En retour, ${randomPhrase}<br><br>
-        Profitons ensemble de cette nouvelle année !
-    `;
-    
-    document.getElementById('wish-card-modal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-
-function closeWishCard() {
-    document.getElementById('wish-card-modal').style.display = 'none';
-    document.body.style.overflow = 'auto';
-}
-
-function shareOnWhatsApp() {
-    const text = `🎉 Carte de Vœux 2026 🎉\n\nDe la part de ${lastWishSender}\n\n"${lastWishMessage}"\n\nEnvoyé via le site de vœux de Royal's 🎊`;
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
-}
-
-function shareOnFacebook() {
-    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`;
-    window.open(url, '_blank');
-}
-
-function copyWishCard() {
-    const text = `🎉 Carte de Vœux 2026 🎉\n\nDe la part de ${lastWishSender}\n\n"${lastWishMessage}"`;
-    
-    navigator.clipboard.writeText(text).then(() => {
-        showNotification("📋 Texte copié !", "success");
-    }).catch(() => {
-        showNotification("❌ Erreur lors de la copie", "error");
-    });
-}
-
-// ============================================
-// GESTION DES MESSAGES
-// ============================================
-function loadLocalMessages() {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        localMessages = raw ? JSON.parse(raw) : [];
-    } catch (e) {
-        console.error("Erreur lecture localStorage:", e);
-        localMessages = [];
+        const { collection, getDocs, query, orderBy, limit } = window.firebaseModules;
+        
+        // Charger les 100 derniers vœux
+        const q = query(
+            collection(window.firebaseDb, "wishes"),
+            orderBy("timestamp", "desc"),
+            limit(100)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        allWishes = [];
+        
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            allWishes.push({
+                id: doc.id,
+                name: data.name || "Anonyme",
+                text: data.text || "",
+                time: data.timestamp?.toDate?.() || new Date(data.createdAt || Date.now()),
+                visitorId: data.visitorId || "inconnu"
+            });
+        });
+        
+        totalMessages = allWishes.length;
+        console.log(`✅ ${totalMessages} vœux chargés`);
+        
+        updateFirebaseStatus(true);
+        updateStats();
+        
+        if (isAdminMode) {
+            displayWishesInAdmin();
+        }
+        
+    } catch (error) {
+        console.error("❌ Erreur chargement vœux:", error);
+        updateFirebaseStatus(false);
     }
 }
 
-function saveLocalMessage(message) {
+function updateFirebaseStatus(connected) {
+    const statusText = document.getElementById('firebase-status-text');
+    const indicator = document.getElementById('firebase-status-indicator');
+    const adminStatus = document.getElementById('firebase-status-admin');
+    
+    if (statusText) {
+        statusText.textContent = connected ? 
+            `Firebase: Connecté (${totalMessages} vœux)` : 
+            "Firebase: Hors ligne";
+        statusText.style.color = connected ? '#10b981' : '#f59e0b';
+    }
+    
+    if (indicator) {
+        indicator.className = connected ? 'status-indicator online' : 'status-indicator offline';
+        indicator.textContent = '●';
+    }
+    
+    if (adminStatus) {
+        adminStatus.textContent = connected ? 
+            `Firebase: Connecté (${totalMessages} vœux)` : 
+            "Firebase: Hors ligne";
+    }
+}
+
+// ============================================
+// ENVOI DE MESSAGE
+// ============================================
+async function submitMessage() {
+    if (isSending) {
+        showNotification("Patientez...", "info");
+        return;
+    }
+    
+    const nameInput = document.getElementById("name");
+    const messageInput = document.getElementById("message");
+    const submitBtn = document.getElementById("submit-btn");
+    
+    if (!nameInput || !messageInput || !submitBtn) {
+        showNotification("Erreur formulaire", "error");
+        return;
+    }
+    
+    const name = (nameInput.value || "").trim();
+    const message = (messageInput.value || "").trim();
+    
+    if (!message) {
+        showNotification("Écrivez vos vœux ! ✍️", "error");
+        messageInput.focus();
+        return;
+    }
+    
+    if (message.length > 500) {
+        showNotification("500 caractères max", "error");
+        return;
+    }
+    
+    if (name) {
+        localStorage.setItem("visitorName", name);
+    }
+    
+    isSending = true;
+    submitBtn.disabled = true;
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-text">Envoi...</span>';
+    
     try {
-        localMessages.push(message);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(localMessages.slice(-MAX_MESSAGES)));
-        return true;
-    } catch (e) {
-        console.error("Erreur sauvegarde locale:", e);
-        return false;
+        if (!window.firebaseDb || !window.firebaseModules) {
+            throw new Error("Firebase non disponible");
+        }
+        
+        const { collection, addDoc } = window.firebaseModules;
+        
+        const messageData = {
+            name: name || "Anonyme",
+            text: message,
+            timestamp: new Date().toISOString(),
+            visitorId: getVisitorId(),
+            date: new Date().toLocaleDateString('fr-FR')
+        };
+        
+        const docRef = await addDoc(collection(window.firebaseDb, "wishes"), messageData);
+        
+        showNotification(`✨ Merci ${name || ''} ! ✅`, "success");
+        
+        messageInput.value = "";
+        document.getElementById('char-count').textContent = "0";
+        
+        showWishCard(name || "Anonyme", message);
+        
+        allWishes.unshift({
+            id: docRef.id,
+            name: name || "Anonyme",
+            text: message,
+            time: new Date(),
+            visitorId: getVisitorId()
+        });
+        
+        totalMessages++;
+        updateStats();
+        updateFirebaseStatus(true);
+        
+        setTimeout(launchConfetti, 300);
+        
+        setTimeout(loadWishesFromFirebase, 2000);
+        
+    } catch (error) {
+        console.error("Erreur:", error);
+        showNotification(error.code === 'permission-denied' ? 
+            "🔒 Erreur permission" : "❌ Erreur d'envoi", "error");
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+        isSending = false;
     }
 }
 
+// ============================================
+// STATISTIQUES
+// ============================================
+function updateStats() {
+    setTimeout(() => {
+        const totalCountEl = document.getElementById('admin-total-count');
+        const onlineCountEl = document.getElementById('admin-online-count');
+        const localCountEl = document.getElementById('admin-local-count');
+        const visitorsCountEl = document.getElementById('admin-visitors-count');
+        const messagesCountEl = document.getElementById('admin-messages-count');
+        const backupCountEl = document.getElementById('backup-count');
+        const localIndicator = document.getElementById('local-status-indicator');
+        
+        if (totalCountEl) {
+            totalCountEl.textContent = totalMessages;
+            totalCountEl.style.animation = 'tick 0.5s ease';
+            setTimeout(() => totalCountEl.style.animation = '', 500);
+        }
+        
+        if (onlineCountEl) onlineCountEl.textContent = totalMessages;
+        if (localCountEl) localCountEl.textContent = "0";
+        if (messagesCountEl) messagesCountEl.textContent = totalMessages;
+        if (backupCountEl) backupCountEl.textContent = totalMessages;
+        
+        const uniqueVisitors = countUniqueVisitors();
+        if (visitorsCountEl) visitorsCountEl.textContent = uniqueVisitors;
+        
+        if (localIndicator) {
+            localIndicator.className = 'status-indicator offline';
+            localIndicator.textContent = '●';
+        }
+    }, 100);
+}
+
+function countUniqueVisitors() {
+    const visitors = new Set();
+    allWishes.forEach(wish => {
+        if (wish.visitorId) visitors.add(wish.visitorId);
+    });
+    return visitors.size;
+}
+
+// ============================================
+// AFFICHAGE ADMIN
+// ============================================
+function displayWishesInAdmin() {
+    if (!isAdminMode) return;
+    
+    const wishesList = document.getElementById('admin-wishes-list');
+    if (!wishesList) return;
+    
+    wishesList.innerHTML = '';
+    
+    if (allWishes.length === 0) {
+        wishesList.innerHTML = `
+            <div class="admin-wishes-empty">
+                <div style="font-size: 3rem; opacity: 0.5;">✨</div>
+                <div style="margin-top: 15px;">
+                    <strong>Aucun vœu pour le moment</strong><br>
+                    <span style="font-size: 0.9rem;">Les vœux apparaîtront ici</span>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    const start = (currentPage - 1) * MESSAGES_PER_PAGE;
+    const end = start + MESSAGES_PER_PAGE;
+    const pageWishes = allWishes.slice(start, end);
+    
+    pageWishes.forEach((wish, index) => {
+        const wishItem = document.createElement('div');
+        wishItem.className = 'admin-wish-item';
+        wishItem.style.animationDelay = `${index * 0.05}s`;
+        
+        const time = new Date(wish.time);
+        const timeStr = time.toLocaleDateString("fr-FR", {
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+        
+        wishItem.innerHTML = `
+            <div class="admin-wish-header">
+                <div class="admin-wish-author">
+                    <span style="display:inline-block; width:24px; height:24px; background:var(--secondary-color); color:white; border-radius:50%; text-align:center; line-height:24px; margin-right:8px; font-size:0.8rem;">
+                        ${wish.name.charAt(0).toUpperCase()}
+                    </span>
+                    ${wish.name}
+                </div>
+                <div class="admin-wish-time">${timeStr}</div>
+            </div>
+            <div class="admin-wish-content">${wish.text}</div>
+            <div style="font-size:0.8rem; color:var(--muted-color); margin-top:8px;">
+                Visiteur: ${wish.visitorId.substring(0, 8)}...
+                <button onclick="deleteWish('${wish.id}')" style="float:right; background:#ef4444; color:white; border:none; padding:2px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer;">
+                    Supprimer
+                </button>
+            </div>
+        `;
+        
+        wishesList.appendChild(wishItem);
+    });
+    
+    updatePagination();
+}
+
+function updatePagination() {
+    const totalPages = Math.ceil(allWishes.length / MESSAGES_PER_PAGE);
+    const pageInfo = document.getElementById('page-info');
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    
+    if (pageInfo) pageInfo.textContent = `Page ${currentPage}/${totalPages}`;
+    if (prevBtn) prevBtn.disabled = currentPage <= 1;
+    if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+    
+    if (prevBtn) {
+        prevBtn.onclick = () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displayWishesInAdmin();
+            }
+        };
+    }
+    
+    if (nextBtn) {
+        nextBtn.onclick = () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayWishesInAdmin();
+            }
+        };
+    }
+}
+
+// ============================================
+// SUPPRESSION DES VŒUX
+// ============================================
+async function deleteWish(wishId) {
+    if (!confirm("Supprimer ce vœu ?")) return;
+    
+    if (!window.firebaseDb || !window.firebaseModules) {
+        showNotification("Firebase non disponible", "error");
+        return;
+    }
+    
+    try {
+        const { doc, deleteDoc } = window.firebaseModules;
+        
+        await deleteDoc(doc(window.firebaseDb, "wishes", wishId));
+        
+        allWishes = allWishes.filter(wish => wish.id !== wishId);
+        totalMessages = allWishes.length;
+        
+        showNotification("✅ Vœu supprimé", "success");
+        updateStats();
+        updateFirebaseStatus(true);
+        displayWishesInAdmin();
+        
+    } catch (error) {
+        console.error("❌ Erreur suppression:", error);
+        showNotification("❌ Erreur suppression", "error");
+    }
+}
+
+// ============================================
+// FONCTIONS UTILITAIRES
+// ============================================
 function getVisitorId() {
     let visitorId = localStorage.getItem("visitorId");
     if (!visitorId) {
@@ -453,324 +915,264 @@ function getVisitorId() {
     return visitorId;
 }
 
-async function submitMessage() {
-    const nameInput = document.getElementById("name");
-    const messageInput = document.getElementById("message");
-    const submitBtn = document.getElementById("submit-btn");
-    
-    const name = (nameInput.value || "").trim();
-    const message = (messageInput.value || "").trim();
-    
-    if (!message) {
-        showNotification("Veuillez écrire un message", "error");
-        return;
-    }
-    
-    if (message.length > 500) {
-        showNotification("Message trop long (max 500 caractères)", "error");
-        return;
-    }
-    
-    if (name) {
-        localStorage.setItem("visitorName", name);
-    }
-    
-    const newMessage = {
-        name: name || localStorage.getItem("visitorName") || "Anonyme",
-        text: message,
-        time: new Date().toISOString(),
-        visitorId: getVisitorId(),
-        localId: "local_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9),
-        synced: false,
-        source: "local"
-    };
-    
-    // Désactiver le bouton pendant l'envoi
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-text">Envoi...</span>';
-    
-    // Sauvegarder localement
-    const saved = saveLocalMessage(newMessage);
-    
-    // Mettre à jour les stats admin si ouvert
-    if (isAdminMode) {
-        updateAdminStats();
-    }
-    
-    // Simuler un envoi
-    setTimeout(() => {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span class="btn-icon">✨</span><span class="btn-text">Envoyer mes vœux</span>';
-        
-        messageInput.value = "";
-        document.getElementById('char-count').textContent = "0";
-        
-        showNotification("✨ Merci pour vos vœux !", "success");
-        
-        // Afficher la carte de vœux
-        setTimeout(() => {
-            showWishCard(newMessage.name, newMessage.text);
-        }, 800);
-        
-        // Lancer les confettis
-        setTimeout(() => {
-            if (window.launchConfetti) window.launchConfetti();
-        }, 1200);
-    }, 1500);
-}
+// ============================================
+// CARTE DE VŒUX
+// ============================================
+let lastWishSender = '';
+let lastWishMessage = '';
 
-// ============================================
-// COMPTE À REBOURS
-// ============================================
-function startCountdown() {
-    const targetDate = new Date(2026, 0, 1, 0, 0, 0);
-    const daysEl = document.getElementById("cd-days");
-    const hoursEl = document.getElementById("cd-hours");
-    const minsEl = document.getElementById("cd-mins");
-    const secsEl = document.getElementById("cd-secs");
+function showWishCard(senderName, message) {
+    lastWishSender = senderName || "Anonyme";
+    lastWishMessage = message;
     
-    function update() {
-        const now = new Date();
-        const diff = targetDate - now;
-        
-        if (diff <= 0) {
-            daysEl.textContent = "0";
-            hoursEl.textContent = "00";
-            minsEl.textContent = "00";
-            secsEl.textContent = "00";
-            if (window.launchConfetti) window.launchConfetti();
-            return;
-        }
-        
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        
-        daysEl.textContent = days;
-        hoursEl.textContent = hours.toString().padStart(2, "0");
-        minsEl.textContent = minutes.toString().padStart(2, "0");
-        secsEl.textContent = seconds.toString().padStart(2, "0");
-        
-        // Animation des secondes
-        if (seconds === 59) {
-            secsEl.classList.add("tick");
-            setTimeout(() => secsEl.classList.remove("tick"), 300);
-        }
-    }
+    const fromElement = document.getElementById('wish-card-from');
+    const messageElement = document.getElementById('wish-card-message');
+    const modal = document.getElementById('wish-card-modal');
     
-    update();
-    setInterval(update, 1000);
-}
-
-// ============================================
-// FONCTIONS ADMIN
-// ============================================
-function openAdminLogin() {
-    document.getElementById('admin-login-modal').style.display = 'flex';
+    if (!fromElement || !messageElement || !modal) return;
+    
+    fromElement.textContent = `De la part de ${senderName || "Anonyme"}`;
+    messageElement.innerHTML = `
+        <strong>Cher Gildas,</strong><br><br>
+        "${message}"<br><br>
+        <em>Je vous souhaite une merveilleuse année 2026 !</em>
+    `;
+    
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
-}
-
-function closeAdminLogin() {
-    document.getElementById('admin-login-modal').style.display = 'none';
-    document.getElementById('admin-password').value = '';
-    document.body.style.overflow = 'auto';
-}
-
-function checkAdminLogin() {
-    const password = document.getElementById('admin-password').value;
     
-    if (password === ADMIN_TOKEN) {
-        isAdminMode = true;
-        localStorage.setItem('adminToken', ADMIN_TOKEN);
-        closeAdminLogin();
-        document.getElementById('admin-panel').style.display = 'block';
-        
-        setTimeout(() => {
-            document.getElementById('admin-panel').classList.add('open');
-            renderAdminWishes();
-            updateAdminStats();
-        }, 10);
-        
-        showNotification("🔧 Mode administrateur activé", "success");
-    } else {
-        showNotification("Token incorrect", "error");
-    }
-}
-
-function closeAdminPanel() {
-    document.getElementById('admin-panel').classList.remove('open');
-    setTimeout(() => {
-        document.getElementById('admin-panel').style.display = 'none';
-        isAdminMode = false;
-    }, 300);
-}
-
-// ============================================
-// METTRE À JOUR LES STATISTIQUES ADMIN
-// ============================================
-function updateAdminStats() {
-    if (!isAdminMode) return;
-    
-    const totalCount = document.getElementById('admin-total-count');
-    const onlineCount = document.getElementById('admin-online-count');
-    const localCount = document.getElementById('admin-local-count');
-    const visitorsCount = document.getElementById('admin-visitors-count');
-    
-    if (!totalCount) return;
-    
-    // 1. Total vœux
-    totalCount.textContent = localMessages.length;
-    
-    // 2. En ligne (simulation - normalement depuis Firebase)
-    const onlineUsers = Math.min(localMessages.length, 5); // Simuler des utilisateurs en ligne
-    onlineCount.textContent = onlineUsers;
-    
-    // 3. Locaux (messages de ce navigateur)
-    const localVisitorId = localStorage.getItem("visitorId");
-    const localMessagesCount = localMessages.filter(msg => 
-        msg.visitorId === localVisitorId
-    ).length;
-    localCount.textContent = localMessagesCount;
-    
-    // 4. Visiteurs uniques
-    const uniqueVisitors = [...new Set(localMessages.map(msg => msg.visitorId))].length;
-    visitorsCount.textContent = uniqueVisitors;
-}
-
-function renderAdminWishes() {
-    if (!isAdminMode) return;
-    
-    const wishesList = document.getElementById('admin-wishes-list');
-    const messagesCount = document.getElementById('admin-messages-count');
-    
-    if (!wishesList) return;
-    
-    // Mettre à jour les statistiques
-    updateAdminStats();
-    
-    wishesList.innerHTML = '';
-    
-    if (localMessages.length === 0) {
-        wishesList.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: var(--muted-color);">
-                <div style="font-size: 3rem; opacity: 0.5;">✨</div>
-                <div style="margin-top: 15px;">
-                    <strong>Aucun vœu pour le moment</strong>
-                </div>
-            </div>
-        `;
-        if (messagesCount) messagesCount.textContent = "0";
-        return;
-    }
-    
-    if (messagesCount) messagesCount.textContent = localMessages.length;
-    
-    // Afficher les vœux
-    localMessages.slice(0, 15).forEach((msg, index) => {
-        const wishItem = document.createElement('div');
-        wishItem.className = 'admin-wish-item';
-        wishItem.style.animationDelay = `${index * 0.1}s`;
-        
-        wishItem.innerHTML = `
-            <div class="admin-wish-header">
-                <div class="admin-wish-author">${msg.name || "Anonyme"}</div>
-                <div class="admin-wish-time">
-                    ${new Date(msg.time).toLocaleString("fr-FR", {
-                        day: "2-digit",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit"
-                    })}
-                    ${msg.synced ? "" : " 🔄"}
-                </div>
-            </div>
-            <div class="admin-wish-content">${msg.text}</div>
-            <div style="font-size: 0.8rem; color: var(--muted-color); margin-top: 8px;">
-                Visiteur: ${msg.visitorId.substring(0, 8)}...
-            </div>
-        `;
-        
-        wishesList.appendChild(wishItem);
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeWishCard();
     });
 }
 
-function refreshAdminWishes() {
-    loadLocalMessages();
-    renderAdminWishes();
-    updateAdminStats();
-    showNotification(`✅ ${localMessages.length} vœux affichés`, "success");
+function closeWishCard() {
+    const modal = document.getElementById('wish-card-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
 }
 
-function clearAllMessages() {
-    if (!confirm("⚠️ Supprimer TOUS les vœux ?\nCette action est irréversible !")) return;
+// ============================================
+// PARTAGE
+// ============================================
+function shareOnWhatsApp() {
+    if (!lastWishSender || !lastWishMessage) return;
     
-    localStorage.removeItem(STORAGE_KEY);
-    localMessages = [];
-    renderAdminWishes();
-    updateAdminStats();
-    showNotification("✅ Tous les vœux ont été supprimés", "success");
+    const text = `🎉 Carte de vœux 2026 de ${lastWishSender} 🎉\n\n"${lastWishMessage}"\n\n${window.location.href}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function shareOnFacebook() {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank');
+}
+
+function copyWishCard() {
+    if (!lastWishSender || !lastWishMessage) return;
     
-    if (window.launchConfetti) window.launchConfetti();
-}
-
-// Fonctions d'export/import/synchronisation (stubs)
-function exportMessages() {
-    showNotification("📥 Export non implémenté", "info");
-}
-
-function importMessages() {
-    showNotification("📤 Import non implémenté", "info");
-}
-
-function syncAllMessages() {
-    showNotification("🔄 Synchronisation non implémentée", "info");
+    const text = `🎉 Carte de vœux 2026 🎉\nDe : ${lastWishSender}\nMessage : ${lastWishMessage}\n${window.location.href}`;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        showNotification("Carte copiée ! 📋", "success");
+    }).catch(() => {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showNotification("Carte copiée ! 📋", "success");
+    });
 }
 
 // ============================================
 // NOTIFICATIONS
 // ============================================
 function showNotification(message, type = "info") {
-    // Supprimer les anciennes notifications
-    document.querySelectorAll('.notification').forEach(n => n.remove());
-    
     const notification = document.createElement("div");
     notification.className = `notification notification-${type}`;
     notification.textContent = message;
+    notification.style.animation = 'slideInRight 0.3s ease';
     
-    document.body.appendChild(notification);
+    let container = document.getElementById('notification-toast');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notification-toast';
+        container.className = 'notification-toast';
+        document.body.appendChild(container);
+    }
     
-    // Auto-suppression
+    container.appendChild(notification);
+    
     setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100%)';
+        notification.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    }, 4000);
+    
+    notification.addEventListener('click', () => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    });
 }
 
 // ============================================
-// ÉVÉNEMENTS GLOBAUX
+// FONCTIONS ADMIN
 // ============================================
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        // Fermer la carte de vœux
-        if (document.getElementById('wish-card-modal').style.display === 'flex') {
-            closeWishCard();
-        }
-        // Fermer le login admin
-        if (document.getElementById('admin-login-modal').style.display === 'flex') {
-            closeAdminLogin();
-        }
-        // Fermer le panel admin
-        if (document.getElementById('admin-panel').style.display === 'block') {
-            closeAdminPanel();
-        }
+function openAdminLogin() {
+    const modal = document.getElementById('admin-login-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => document.getElementById('admin-password')?.focus(), 100);
     }
-});
+}
 
-// Empêcher le zoom avec Ctrl+scroll
-document.addEventListener('wheel', function(e) {
-    if (e.ctrlKey) {
-        e.preventDefault();
+function closeAdminLogin() {
+    const modal = document.getElementById('admin-login-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        const input = document.getElementById('admin-password');
+        if (input) input.value = '';
     }
-}, { passive: false });
+}
+
+function checkAdminLogin() {
+    const password = document.getElementById('admin-password')?.value.trim() || '';
+    
+    if (password === ADMIN_TOKEN) {
+        isAdminMode = true;
+        closeAdminLogin();
+        
+        const panel = document.getElementById('admin-panel');
+        if (panel) {
+            panel.style.display = 'block';
+            setTimeout(() => panel.classList.add('open'), 10);
+            
+            initializeAdminPanel();
+        }
+        
+        showNotification("🔧 Admin activé", "success");
+    } else {
+        showNotification("Token incorrect", "error");
+        const input = document.getElementById('admin-password');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+    }
+}
+
+function initializeAdminPanel() {
+    updateFirebaseStatus(window.firebaseDb ? true : false);
+    updateStats();
+    displayWishesInAdmin();
+}
+
+function closeAdminPanel() {
+    const panel = document.getElementById('admin-panel');
+    if (panel) {
+        panel.classList.remove('open');
+        setTimeout(() => {
+            panel.style.display = 'none';
+            isAdminMode = false;
+        }, 300);
+    }
+}
+
+// ============================================
+// FONCTIONS ADMIN COMPLÈTES
+// ============================================
+window.refreshAdminWishes = function() {
+    showNotification("🔄 Chargement...", "info");
+    loadWishesFromFirebase();
+};
+
+window.syncAllMessages = function() {
+    showNotification("🔄 Synchronisation...", "info");
+    loadWishesFromFirebase();
+};
+
+window.clearAllMessages = async function() {
+    if (!confirm("⚠️ SUPPRIMER TOUS LES VŒUX ?\nCette action est irréversible !")) {
+        return;
+    }
+    
+    if (!window.firebaseDb || !window.firebaseModules) {
+        showNotification("Firebase non disponible", "error");
+        return;
+    }
+    
+    showNotification("🗑️ Suppression en cours...", "warning");
+    
+    try {
+        const { collection, getDocs, deleteDoc, doc } = window.firebaseModules;
+        
+        const querySnapshot = await getDocs(collection(window.firebaseDb, "wishes"));
+        const deletePromises = [];
+        
+        querySnapshot.forEach((document) => {
+            deletePromises.push(deleteDoc(doc(window.firebaseDb, "wishes", document.id)));
+        });
+        
+        await Promise.all(deletePromises);
+        
+        allWishes = [];
+        totalMessages = 0;
+        
+        showNotification(`✅ ${deletePromises.length} vœux supprimés`, "success");
+        updateStats();
+        displayWishesInAdmin();
+        
+    } catch (error) {
+        console.error("❌ Erreur suppression:", error);
+        showNotification("❌ Erreur suppression", "error");
+    }
+};
+
+window.exportMessages = function() {
+    if (allWishes.length === 0) {
+        showNotification("Aucun vœu à exporter", "warning");
+        return;
+    }
+    
+    const dataStr = JSON.stringify(allWishes, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', `voeux-2026-${new Date().toISOString().split('T')[0]}.json`);
+    linkElement.click();
+    
+    showNotification(`✅ ${allWishes.length} vœux exportés`, "success");
+};
+
+window.exportLocalBackup = function() {
+    showNotification("Pas de sauvegarde locale", "info");
+};
+
+window.clearLocalBackup = function() {
+    showNotification("Pas de sauvegarde locale", "info");
+};
+
+// ============================================
+// EXPOSITION GLOBALE
+// ============================================
+window.submitMessage = submitMessage;
+window.showWishCard = showWishCard;
+window.closeWishCard = closeWishCard;
+window.shareOnWhatsApp = shareOnWhatsApp;
+window.shareOnFacebook = shareOnFacebook;
+window.copyWishCard = copyWishCard;
+window.openAdminLogin = openAdminLogin;
+window.closeAdminLogin = closeAdminLogin;
+window.checkAdminLogin = checkAdminLogin;
+window.closeAdminPanel = closeAdminPanel;
+window.launchConfetti = launchConfetti;
+window.refreshAdminWishes = refreshAdminWishes;
+window.syncAllMessages = syncAllMessages;
+window.clearAllMessages = clearAllMessages;
+window.exportMessages = exportMessages;
+window.exportLocalBackup = exportLocalBackup;
+window.clearLocalBackup = clearLocalBackup;
+window.deleteWish = deleteWish;

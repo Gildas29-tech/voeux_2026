@@ -7,34 +7,76 @@
     <link rel="stylesheet" href="voeux.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="Capture d'écran 2025-12-29 121940.png">
-    <!-- Firebase SDK -->
+    
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot, deleteDoc, doc, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { 
+        getFirestore, 
+        collection, 
+        addDoc,
+        getDocs,
+        query,
+        orderBy,
+        limit
+    } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCAgYVLTRlsHh20IlAuq2_Z4Z-G1-pl80Q",
-            authDomain: "nouvel-an-2026-cbc25.firebaseapp.com",
-            projectId: "nouvel-an-2026-cbc25",
-            storageBucket: "nouvel-an-2026-cbc25.firebasestorage.app",
-            messagingSenderId: "71183787510",
-            appId: "1:71183787510:web:69b6c3547298fbecef93d7"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyCkT7JgTkmBYvDpHRbbL0eOoHt2hie_f7o",
+        authDomain: "royals-voeux-2026-f8418.firebaseapp.com",
+        projectId: "royals-voeux-2026-f8418",
+        storageBucket: "royals-voeux-2026-f8418.firebasestorage.app",
+        messagingSenderId: "307861108396",
+        appId: "1:307861108396:web:4401525ebf39bc5bd1d109"
+    };
 
+    console.log("🚀 Initialisation Firebase...");
+    
+    try {
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         
-        window.firebaseApp = app;
+        // Exposer Firebase globalement
         window.firebaseDb = db;
         window.firebaseModules = {
-            collection, addDoc, serverTimestamp, query, orderBy, 
-            limit, onSnapshot, deleteDoc, doc, getDocs, writeBatch
+            collection,
+            addDoc,
+            getDocs,
+            query,
+            orderBy,
+            limit
         };
-    </script>
+        
+        console.log("✅ Firebase initialisé avec succès !");
+        console.log("📊 Projet ID:", firebaseConfig.projectId);
+        
+        // ⭐⭐ IMPORTANT : Appeler la fonction d'initialisation ⭐⭐
+        if (typeof window.onFirebaseInitialized === 'function') {
+            window.onFirebaseInitialized();
+        }
+        
+        // Tester la connexion
+        getDocs(collection(db, "wishes")).then((snapshot) => {
+            console.log(`✅ Connexion réussie - ${snapshot.size} vœux`);
+            
+            // Mettre à jour le statut dans la page
+            const statusEl = document.getElementById('firebase-status-text');
+            if (statusEl) {
+                statusEl.textContent = `Firebase: Connecté (${snapshot.size} vœux)`;
+                statusEl.style.color = '#10b981';
+            }
+            
+        }).catch(error => {
+            console.warn("⚠️ Erreur Firestore:", error);
+        });
+        
+    } catch (error) {
+        console.error("❌ Erreur Firebase:", error);
+    }
+</script>
 </head>
 <body>
     <!-- Élément audio pour la musique -->
-    <audio id="background-music" loop>
+    <audio id="background-music" loop preload="auto">
         <source src="musique-festive.mp3" type="audio/mpeg">
         Votre navigateur ne supporte pas l'élément audio.
     </audio>
@@ -61,8 +103,7 @@
     <!-- Modal de carte de vœux -->
     <div id="wish-card-modal" class="wish-card-modal">
         <div class="wish-card">
-            <!-- CROIX DE RETOUR EN HAUT À DROITE -->
-            <button onclick="closeWishCard()" class="close-wish-card" title="Fermer et retourner au site">×</button>
+            <button onclick="closeWishCard()" class="close-wish-card" title="Fermer">×</button>
             
             <div class="wish-card-header">
                 <h2>🎉 Carte de Vœux 2026 🎉</h2>
@@ -72,44 +113,73 @@
                 <div class="wish-card-message" id="wish-card-message"></div>
                 <div class="wish-card-signature">
                     Avec toute mon affection,<br>
-                    <strong>Royal's</strong>
+                    <strong>Gildas</strong>
                 </div>
             </div>
             <div class="wish-card-share">
                 <button onclick="shareOnWhatsApp()" class="share-btn whatsapp" title="Partager sur WhatsApp">
-                    💬 
+                    <span class="share-icon">💬</span>
+                    <span class="share-text">WhatsApp</span>
                 </button>
                 <button onclick="shareOnFacebook()" class="share-btn facebook" title="Partager sur Facebook">
-                    📘 
+                    <span class="share-icon">📘</span>
+                    <span class="share-text">Facebook</span>
                 </button>
-                <button onclick="copyWishCard()" class="share-btn copy" title="Copier le texte ">📋</button>
-                <button onclick="closeWishCard()" class="share-btn return-btn" title="Retour au site">
-                    ↩️ 
+                <button onclick="copyWishCard()" class="share-btn copy" title="Copier la carte">
+                    <span class="share-icon">📋</span>
+                    <span class="share-text">Copier</span>
                 </button>
+                <button onclick="closeWishCard()" class="share-btn return-btn" title="Retour">
+                    <span class="share-icon">↩️</span>
+                    <span class="share-text">Retour</span>
+                </button>
+            </div>
+            <div class="wish-card-footer">
+                <small>Partagez l'amour et les bonnes ondes ! ✨</small>
             </div>
         </div>
     </div>
 
-    <!-- Login admin modal -->
+    <!-- Login admin -->
     <div id="admin-login-modal" class="admin-login-modal">
         <div class="admin-login-content">
-            <button onclick="closeAdminLogin()" class="close-modal-btn" title="Fermer">×</button>
+            <button onclick="closeAdminLogin()" class="close-modal-btn">×</button>
             <h2>🔐 Portail Administrateur</h2>
             <p>Accédez au panel de gestion des vœux</p>
-            <input type="password" id="admin-password" class="admin-input" placeholder="Entrez le token admin">
+            <input type="password" id="admin-password" class="admin-input" placeholder="Entrez le token admin" autocomplete="off">
             <button onclick="checkAdminLogin()" class="admin-login-btn">Accéder au panel</button>
             <p style="margin-top: 15px; font-size: 0.8rem; color: var(--muted-color);">
                 Token : seul Gildas le connait 😊
             </p>
+            <div class="admin-info">
+                <details>
+                    <summary>ℹ️ Information Firebase</summary>
+                    <div id="firebase-status" style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 5px; font-size: 0.8rem;">
+                        <div id="firebase-status-text">Chargement du statut Firebase...</div>
+                    </div>
+                </details>
+            </div>
         </div>
     </div>
 
-    <!-- Panel admin (caché sur le côté) -->
+    <!-- Panel admin -->
     <div id="admin-panel" class="admin-panel">
         <div class="admin-panel-header">
-            <h3>🔧 Administration</h3>
+            <h3>🔧 Administration des Vœux</h3>
             <button onclick="closeAdminPanel()" class="close-admin-btn">×</button>
         </div>
+        
+        <div class="admin-connection-status">
+            <div class="connection-status-item">
+                <span class="status-indicator" id="firebase-status-indicator">●</span>
+                <span class="status-text" id="firebase-status-admin">Firebase: Vérification...</span>
+            </div>
+            <div class="connection-status-item">
+                <span class="status-indicator" id="local-status-indicator">●</span>
+                <span class="status-text">Stockage local: <span id="local-count">0</span> vœux</span>
+            </div>
+        </div>
+        
         <div class="admin-stats">
             <div class="admin-stats-grid">
                 <div class="admin-stat-item">
@@ -131,109 +201,187 @@
             </div>
         </div>
         
-        <!-- Section des vœux dans l'admin -->
         <div class="admin-wishes-section">
             <div class="admin-wishes-header">
                 <h4>📜 Vœux reçus</h4>
                 <div class="admin-wishes-actions">
-                    <button onclick="refreshAdminWishes()" class="admin-refresh-btn" title="Rafraîchir">
-                        🔄
-                    </button>
+                    <button onclick="refreshAdminWishes()" class="admin-refresh-btn" title="Rafraîchir">🔄</button>
                     <div class="admin-wishes-count">
                         <span id="admin-messages-count">0</span> vœux
                     </div>
                 </div>
             </div>
+            <div class="admin-wishes-filter">
+                <select id="admin-filter-select" class="admin-filter-select" onchange="filterAdminWishes()">
+                    <option value="all">Tous les vœux</option>
+                    <option value="today">Aujourd'hui</option>
+                    <option value="week">Cette semaine</option>
+                    <option value="month">Ce mois</option>
+                    <option value="anonymous">Anonymes</option>
+                    <option value="named">Avec nom</option>
+                </select>
+                <input type="text" id="admin-search-input" class="admin-search-input" placeholder="Rechercher..." onkeyup="searchAdminWishes()">
+            </div>
             <div id="admin-wishes-list" class="admin-wishes-grid">
-                <!-- Les vœux seront ajoutés ici -->
+                <div class="admin-wishes-empty">
+                    <p>Chargement des vœux...</p>
+                </div>
+            </div>
+            <div class="admin-wishes-pagination">
+                <button id="prev-page" class="pagination-btn" disabled>← Précédent</button>
+                <span id="page-info">Page 1/1</span>
+                <button id="next-page" class="pagination-btn" disabled>Suivant →</button>
             </div>
         </div>
         
         <div class="admin-actions">
             <button onclick="exportMessages()" class="admin-action-btn">
-                📥 Exporter
-            </button>
-            <button onclick="importMessages()" class="admin-action-btn">
-                📤 Importer
+                <span class="action-icon">📥</span>
+                <span class="action-text">Exporter</span>
             </button>
             <button onclick="syncAllMessages()" class="admin-action-btn">
-                🔄 Synchroniser
+                <span class="action-icon">🔄</span>
+                <span class="action-text">Synchroniser</span>
             </button>
-            <button onclick="clearAllMessages()" class="admin-action-btn delete">
-                🗑️ Effacer tout
+            <button onclick="clearAllMessages()" class="admin-action-btn delete" title="Supprimer tous les vœux de Firebase">
+                <span class="action-icon">🗑️</span>
+                <span class="action-text">Effacer tout</span>
             </button>
+        </div>
+        
+        <div class="admin-backup-section">
+            <h4>💾 Sauvegarde locale</h4>
+            <div class="backup-info">
+                <p><span id="backup-count">0</span> vœux sauvegardés localement</p>
+                <button onclick="exportLocalBackup()" class="backup-btn">📋 Exporter backup</button>
+                <button onclick="clearLocalBackup()" class="backup-btn delete">🗑️ Vider backup</button>
+            </div>
         </div>
     </div>
 
-    <!-- Header avec logo Royal's -->
-    <header class="site-header" role="banner">
+    <!-- Header -->
+    <header class="site-header">
         <div class="site-header-inner">
-            <div class="brand" aria-hidden="true">
+            <div class="brand">
                 <div class="brand-logo">
-                    <img src="Capture d'écran 2025-12-29 121940.png" alt="Royal's Logo" class="logo-img">
+                    <img src="Capture d'écran 2025-12-29 121940.png" alt="Logo" class="logo-img" loading="lazy">
                 </div>
-                <div class="brand-text"><strong style="color: white;">Gildas's</strong></div>
+                <div class="brand-text">
+                    <strong style="color: white;">Gildas's</strong>
+                    <span class="brand-subtitle">Vœux 2026</span>
+                </div>
             </div>
-            <nav class="site-nav" aria-label="Navigation principale">
-                <button id="theme-toggle" class="nav-btn" type="button" title="Changer le thème">
-                    <span class="theme-icon">🌙</span>
+            <nav class="site-nav">
+                <button id="theme-toggle" class="nav-btn" title="Changer le thème">
+                    <span class="nav-icon">🌙</span>
+                    <span class="nav-text">Thème</span>
                 </button>
-                <button id="celebrate-btn" class="nav-btn celebrate-btn" type="button" title="Lancer une explosion de confettis">
-                    🎊 Célébrer
+                <button id="celebrate-btn" class="nav-btn celebrate-btn" title="Lancer les confettis">
+                    <span class="nav-icon">🎊</span>
+                    <span class="nav-text">Célébrer</span>
                 </button>
-                <button onclick="openAdminLogin()" class="nav-btn admin-btn" title="Portail administrateur">
-                    🔧 Admin
+                <button onclick="openAdminLogin()" class="nav-btn admin-btn" title="Accès administrateur">
+                    <span class="nav-icon">🔧</span>
+                    <span class="nav-text">Admin</span>
                 </button>
             </nav>
-            <!-- Menu mobile -->
-            <button class="mobile-menu-btn" id="mobile-menu-btn">
-                ☰
-            </button>
+            <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
         </div>
-        <!-- Menu mobile dropdown -->
         <div class="mobile-menu" id="mobile-menu">
             <button id="theme-toggle-mobile" class="mobile-menu-item">
-                <span class="theme-icon">🌙</span> Thème
+                <span class="menu-icon">🌙</span>
+                <span class="menu-text">Thème</span>
             </button>
             <button id="celebrate-btn-mobile" class="mobile-menu-item">
-                🎊 Célébrer
+                <span class="menu-icon">🎊</span>
+                <span class="menu-text">Célébrer</span>
             </button>
             <button onclick="openAdminLogin()" class="mobile-menu-item">
-                🔧 Admin
+                <span class="menu-icon">🔧</span>
+                <span class="menu-text">Admin</span>
+            </button>
+            <button onclick="window.scrollTo({top: document.querySelector('.form-section').offsetTop, behavior: 'smooth'})" class="mobile-menu-item">
+                <span class="menu-icon">✍️</span>
+                <span class="menu-text">Écrire mes vœux</span>
             </button>
         </div>
     </header>
 
     <div class="container">
-        <div class="greeting-card" id="greeting-card">
-            <h1>🎉 Je vous souhaite 🎉</h1>
-            <p>Une merveilleuse année 2026 pleine de bonheur, de succès, de santé et d'amour !</p>
-            <div class="countdown" id="countdown" aria-live="polite" aria-atomic="true" role="timer" title="Compte à rebours jusqu'au Nouvel An 2026">
-                <div class="countdown-inner">
-                    <div class="time-segment"><span class="num" id="cd-days">0</span><span class="label">Jours</span></div>
-                    <div class="time-segment"><span class="num" id="cd-hours">00</span><span class="label">Heures</span></div>
-                    <div class="time-segment"><span class="num" id="cd-mins">00</span><span class="label">Minutes</span></div>
-                    <div class="time-segment"><span class="num" id="cd-secs">00</span><span class="label">Secondes</span></div>
+        <!-- Section Hero -->
+        <div class="hero-section">
+            <div class="greeting-card" id="greeting-card">
+                <div class="greeting-header">
+                    <h1>🎉 Je vous souhaite 🎉</h1>
+                    <div class="greeting-subtitle">Une merveilleuse année 2026</div>
+                </div>
+                <p class="greeting-message">
+                    Pleine de bonheur, de succès, de santé et d'amour !<br>
+                    Que cette nouvelle année vous apporte joie et prospérité.
+                </p>
+                
+                <div class="countdown" id="countdown">
+                    <div class="countdown-title">📅 Nouvel An 2026 dans :</div>
+                    <div class="countdown-inner">
+                        <div class="time-segment">
+                            <span class="num" id="cd-days">0</span>
+                            <span class="label">Jours</span>
+                        </div>
+                        <div class="time-segment">
+                            <span class="num" id="cd-hours">00</span>
+                            <span class="label">Heures</span>
+                        </div>
+                        <div class="time-segment">
+                            <span class="num" id="cd-mins">00</span>
+                            <span class="label">Minutes</span>
+                        </div>
+                        <div class="time-segment">
+                            <span class="num" id="cd-secs">00</span>
+                            <span class="label">Secondes</span>
+                        </div>
+                    </div>
+                    <div class="countdown-progress">
+                        <div class="progress-bar" id="countdown-progress"></div>
+                    </div>
+                </div>
+                
+                <div class="greeting-actions">
+                    <button onclick="window.scrollTo({top: document.querySelector('.form-section').offsetTop, behavior: 'smooth'})" class="scroll-to-form-btn">
+                        <span class="btn-icon">✍️</span>
+                        <span class="btn-text">Écrire mes vœux</span>
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Formulaire de vœux -->
-        <div class="form-section" id="messages">
+        <!-- Formulaire -->
+        <div class="form-section">
             <div class="form-container">
                 <h2>✍️ Écrivez vos vœux pour 2026</h2>
                 <p class="form-subtitle">Partagez vos souhaits et recevez une carte personnalisée</p>
                 
                 <div class="form-group">
-                    <label for="name">Votre prénom (optionnel)</label>
-                    <input id="name" type="text" placeholder="Ex: emile ">
+                    <label for="name">
+                        <span class="label-icon">👤</span>
+                        Votre prénom (optionnel)
+                    </label>
+                    <input id="name" type="text" placeholder="Ex: Emile, Sophie, Jean...">
+                    <div class="form-hint">Votre nom sera associé à vos vœux</div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="message">Vos vœux</label>
-                    <textarea id="message" placeholder="Que me souhaitez-vous pour cette nouvelle année ? Que souhaitez-vous pour vous-même ? Partagez vos meilleurs vœux..."></textarea>
-                    <div class="textarea-counter">
-                        <span id="char-count">0</span>/500 caractères
+                    <label for="message">
+                        <span class="label-icon">💌</span>
+                        Vos vœux pour moi
+                    </label>
+                    <textarea id="message" placeholder="Que souhaitez-vous pour moi en cette nouvelle année ? Partagez vos vœux de bonheur, succès, santé, amour..."></textarea>
+                    <div class="textarea-footer">
+                        <div class="textarea-counter">
+                            <span id="char-count">0</span>/500 caractères
+                        </div>
+                        <div class="textarea-tips">
+                            💡 Conseil : Soyez sincère et personnalisé !
+                        </div>
                     </div>
                 </div>
                 
@@ -245,61 +393,139 @@
                 </div>
                 
                 <div class="form-info">
-                    <p>📝 <strong>Votre vœu sera :</strong></p>
-                    <ul>
-                        <li>Sauvegardé pour Royal's</li>
-                        <li>Visible uniquement par l'administrateur</li>
-                    </ul>
+                    <div class="info-card">
+                        <h4>📝 Comment ça marche ?</h4>
+                        <ol>
+                            <li><strong>Remplissez</strong> le formulaire ci-dessus</li>
+                            <li><strong>Envoyez</strong> vos vœux (ils sont sauvegardés)</li>
+                            <li><strong>Recevez</strong> une carte personnalisée</li>
+                            <li><strong>Partagez</strong> avec vos proches si vous le souhaitez</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="privacy-notice">
+                        <h4>🔒 Confidentialité</h4>
+                        <p>Vos vœux sont :</p>
+                        <ul>
+                            <li><strong>Sauvegardés</strong> pour Gildas</li>
+                           <li><strong>Stockés en toute sécurité</strong> sur Firebase</li>
+                            <li><strong>Jamais partagés</strong> avec des tiers</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Instructions pour mobile -->
+        <!-- Instructions mobile -->
         <div class="mobile-instructions">
             <div class="instruction-card">
-                <h3>📱 Comment ça marche ?</h3>
-                <ol>
-                    <li><strong>Écrivez</strong> vos vœux dans le formulaire</li>
-                    <li><strong>Envoyez</strong> pour recevoir une carte personnalisée</li>
-                    <li><strong>Partagez</strong> votre carte avec vos proches</li>
-                    <li><strong>Célébrez</strong> avec les animations festives !</li>
-                </ol>
+                <h3>📱 Comment envoyer vos vœux ?</h3>
+                <div class="instruction-steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <strong>Écrivez</strong> vos vœux dans le formulaire
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <strong>Envoyez</strong> pour recevoir une carte
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <strong>Partagez</strong> votre carte personnalisée
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <strong>Célébrez</strong> avec les animations festives !
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- FOOTER -->
+    <!-- Footer -->
     <footer class="site-footer">
-        <div class="footer-content">
-            <div class="footer-contact">
-                <h3><a href="tel:+22899522491" class="phone-number">📞 Contactez-moi</a></h3>
-                <p>Partagez l'amour et les bonnes ondes pour 2026 !</p>
-                <div class="footer-social">
-                    <a href="mailto:contact@royals-voeux.com?subject=Vœux%202026" class="social-link" title="Email">
-                        <span class="social-icon">✉️</span>
-                        <span class="social-text">Email</span>
-                    </a>
-                    <a href="https://wa.me/22899522491?text=Bonjour%20Royal's%20!%20Je%20viens%20de%20voir%20ton%20site%20de%20vœux%202026%20🎉" class="social-link" title="WhatsApp" target="_blank">
-                        <span class="social-icon">💬</span>
-                        <span class="social-text">WhatsApp</span>
-                    </a>
-                    <a href="tel:+22899522491" class="social-link" title="Téléphone">
-                        <span class="social-icon">📞</span>
-                        <span class="social-text">Appeler</span>
-                    </a>
+        
+            
+            <div class="footer-sections">
+                <div class="footer-section">
+                    <h4> Contactez-moi</h4>
+                    <div class="contact-info">
+                        <a href="tel:+22899522491" class="contact-link phone">
+                            <span class="contact-icon">📞</span>
+                            phone
+                        </a>
+                        <a href="mailto:mebounougildas@gmail.com?subject=Vœux%202026" class="contact-link email">
+                            <span class="contact-icon">✉️</span>
+                            Email
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>🔗 Liens rapides</h4>
+                    <div class="quick-links">
+                        <a href="#top" class="quick-link" onclick="window.scrollTo({top: 0, behavior: 'smooth'}); return false;">↑ Retour en haut</a>
+                        <a href="javascript:void(0)" class="quick-link" onclick="openAdminLogin()">🔧 Admin</a>
+                        <a href="javascript:void(0)" class="quick-link" onclick="window.launchConfetti && launchConfetti()">🎊 Célébrer</a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>🌐 Suivez-moi</h4>
+                    <div class="footer-social">
+                        <a href="https://wa.me/22899522491?text=Bonjour%20Gildas%20!%20Je%20viens%20de%20voir%20ton%20site%20de%20vœux%202026%20🎉" 
+                           class="social-link whatsapp" target="_blank" title="WhatsApp">
+                            <span class="social-icon">💬</span>
+                            <span class="social-text">WhatsApp</span>
+                        </a>
+                        <a href="mailto:mebounougildas@gmail.com?subject=Vœux%202026" 
+                           class="social-link email" title="Email">
+                            <span class="social-icon">✉️</span>
+                            <span class="social-text">Email</span>
+                        </a>
+                        <a href="tel:+22899522491" 
+                           class="social-link phone" title="Appeler">
+                            <span class="social-icon">📞</span>
+                            <span class="social-text">Appeler</span>
+                        </a>
+                    </div>
                 </div>
             </div>
+            
             <div class="footer-copyright">
-                <p>© 2025-2026 <strong>Royal's</strong> - Vœux de Nouvel An</p>
-                <p>Tous droits réservés. Créé avec ❤️ par Gildas</p>
+                <p>© 2025-2026 <strong>Gildas's Vœux</strong> - Tous droits réservés</p>
+                <p class="made-with">Créé avec ❤️ par Gildas pour partager l'amour en 2026</p>
+                <div class="footer-tech">
+                    <span class="tech-item">Firebase</span>
+                    <span class="tech-item">HTML5</span>
+                    <span class="tech-item">CSS3</span>
+                    <span class="tech-item">JavaScript</span>
+                </div>
             </div>
         </div>
     </footer>
 
     <!-- Bouton retour en haut -->
-    <button class="back-to-top" id="back-to-top" title="Retour en haut">
-        ↑
-    </button>
+    <button class="back-to-top" id="back-to-top" title="Retour en haut">↑</button>
+
+    <!-- Notification Toast -->
+    <div id="notification-toast" class="notification-toast"></div>
+
+    <!-- Loader -->
+    <div id="global-loader" class="global-loader">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Chargement...</div>
+        </div>
+    </div>
 
     <script src="voeux.js"></script>
 </body>
